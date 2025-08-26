@@ -1,5 +1,5 @@
 [
-    {
+  {
       "id": 1,
       "name": "NPCCaptain",
       "x": 1623,
@@ -13,7 +13,7 @@
       "Linked_Mission": "CaptainFink",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 2,
+      "summonerId": 2,
       "power_id": 2,
       "facing_left": true,
       "health_delta": 1,
@@ -37,7 +37,7 @@
       "Linked_Mission": "NR_Mayor01",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 2,
+      "summonerId": 2,
       "power_id": 2,
       "facing_left": true,
       "health_delta": 1,
@@ -61,7 +61,7 @@
       "Linked_Mission": "Ehric NPC is supposed to be here",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 2,
+      "summonerId": 2,
       "power_id": 2,
       "facing_left": true,
       "health_delta": 1,
@@ -84,7 +84,7 @@
       "Linked_Mission": "NR_Villager03",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 2,
       "entState": 0,
       "facing_left": true,
@@ -104,7 +104,7 @@
       "Linked_Mission": "NR_Villager02",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 2,
       "entState": 0,
       "facing_left": true,
@@ -125,7 +125,7 @@
       "Linked_Mission": "NR_CartGuy",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -150,7 +150,7 @@
       "Linked_Mission": "NR_Hermit",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -175,7 +175,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -200,7 +200,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -225,7 +225,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 0,
       "facing_left": false,
       "health_delta": 0,
@@ -250,7 +250,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 50,
+      "summonerId": 50,
       "power_id": 0,
       "facing_left": false,
       "health_delta": 0,
@@ -275,7 +275,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -300,7 +300,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": false,
       "health_delta": 0,
@@ -325,7 +325,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -350,7 +350,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -378,7 +378,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": false,
       "health_delta": 0,
@@ -403,7 +403,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -428,7 +428,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": false,
       "health_delta": 0,
@@ -453,7 +453,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -483,7 +483,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -508,7 +508,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": false,
       "health_delta": 0,
@@ -533,7 +533,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -558,7 +558,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 0,
@@ -583,7 +583,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": false,
       "health_delta": 0,
@@ -716,8 +716,9 @@
       "x": 3134,
       "y": 479,
       "v": 0,
-      "team": 1
-
+      "team": 1,
+      "facing_left": false,
+      "PlayerLevel": 50
   },
   {
     "is_player": true,
@@ -816,8 +817,9 @@
       "x": 3577,
       "y": 579,
       "v": 0,
-      "team": 1
-
+      "team": 1,
+      "facing_left": true,
+      "PlayerLevel": 45
   },
   {
     "is_player": true,
@@ -916,8 +918,9 @@
       "x": 4127,
       "y": 487,
       "v": 0,
-      "team": 1
-
+      "team": 1,
+      "facing_left": false,
+      "PlayerLevel": 40
   },
   {
     "is_player": true,
@@ -1016,9 +1019,123 @@
       "x": 2762,
       "y": 599,
       "v": 0,
-      "team": 1
-
-  }
-
-
-  ]
+      "team": 1,
+      "facing_left": true,
+      "PlayerLevel": 30
+  },
+  {
+    "is_player": true,
+    "id": 153,
+      "name": "Viawizee",
+      "class": "Rogue",
+      "gender": "Female",
+      "headSet": "FemaleHead",
+      "hairSet": "FDo17",
+      "mouthSet": "FMouth04",
+      "faceSet": "FFace04",
+      "hairColor": 13315072,
+      "skinColor": 16764057,
+      "shirtColor": 466983,
+      "pantColor": 466983,
+      "equippedGears": [
+        {
+          "gearID": 1028,
+          "tier": 2,
+          "runes": [
+            70,
+            70,
+            70
+          ],
+          "colors": [
+            0,
+            0
+          ]
+        },
+        {
+          "gearID": 1032,
+          "tier": 2,
+          "runes": [
+            70,
+            70,
+            70
+          ],
+          "colors": [
+            0,
+            0
+          ]
+        },
+        {
+          "gearID": 1025,
+          "tier": 2,
+          "runes": [
+            70,
+            70,
+            70
+          ],
+          "colors": [
+            0,
+            0
+          ]
+        },
+        {
+          "gearID": 1035,
+          "tier": 2,
+          "runes": [
+            70,
+            70,
+            70
+          ],
+          "colors": [
+            0,
+            0
+          ]
+        },
+        {
+          "gearID": 1017,
+          "tier": 2,
+          "runes": [
+            70,
+            70,
+            70
+          ],
+          "colors": [
+            0,
+            0
+          ]
+        },
+        {
+          "gearID": 1021,
+          "tier": 2,
+          "runes": [
+            70,
+            70,
+            70
+          ],
+          "colors": [
+            0,
+            0
+          ]
+        }
+      ],
+      "x": 2762,
+      "y": 599,
+      "v": 0,
+      "team": 1,
+      "set_timing_flag": true,
+      "show_appearance_effect": false,
+      "PetTypeID": 1,
+      "PetLevel": 1,
+      "MountID": 1,
+      "Emote_ID": 1,
+      "abilities": [
+      {"abilityID": 5, "rank": 3},
+      {"abilityID": 10, "rank": 2},
+      {"abilityID": 15, "rank": 1}
+      ],
+      "power_id": 0,
+      "entState": 0,
+      "facing_left": true,
+      "PlayerLevel": 50,
+      "Talent_id": 10
+    }
+ ]

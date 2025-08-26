@@ -14,7 +14,7 @@
       "SleepAnim": "",
       "power_id": 0,
       "entState": 0,
-      "level": 0,
+      "summonerId": 0,
       "facing_left": true,
       "health_delta": 0,
       "buffs": [],

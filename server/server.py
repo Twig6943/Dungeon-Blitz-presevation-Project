@@ -27,7 +27,6 @@ from Commands import handle_hotbar_packet, handle_masterclass_packet, handle_gea
     handle_linkupdater, handle_request_respawn, handle_respawn_ack, PKTTYPE_BUFF_TICK_DOT, handle_entity_destroy, \
     handle_emote_begin, Client_Crash_Reports, handle_mount_equip_packet, handle_pet_info_packet, \
     handle_collect_hatched_egg, handle_talk_to_npc, handle_char_regen
-from constants import Entity
 from WorldEnter import build_enter_world_packet, Player_Data_Packet
 from bitreader import BitReader
 from PolicyServer import start_policy_server
@@ -42,9 +41,26 @@ pending_world = {}
 all_sessions = []
 current_characters = {}
 used_tokens = {}
+session_by_token = {}
+level_registry = {}
+char_tokens = {}
+token_char   = {}
+extended_sent_map = {}  # user_id -> bool
 
 SECRET_HEX = "815bfb010cd7b1b4e6aa90abc7679028"
 SECRET      = bytes.fromhex(SECRET_HEX)
+
+
+def _level_add(level, session):
+    s = level_registry.setdefault(level, set())
+    s.add(session)
+
+def _level_remove(level, session):
+    s = level_registry.get(level)
+    if s and session in s:
+        s.remove(session)
+        if not s:
+            level_registry.pop(level, None)
 
 def send_login_challenge(conn):
     # 1) pick a random 16-bit sid
@@ -66,9 +82,11 @@ def send_login_challenge(conn):
     #print(f"→ Sent 0x12 login challenge sid={sid_hex} hash={digest}")
 
 def new_transfer_token():
-    while (t := secrets.randbits(16)) in pending_world:
-        pass
-    return t
+    """Allocate a persistent 16-bit token not in use."""
+    while True:
+        t = secrets.randbits(16)
+        if t not in session_by_token:
+           return t
 
 def find_active_session(user_id, char_name):
     for s in all_sessions:
@@ -85,7 +103,6 @@ class ClientSession:
         self.addr = addr
         self.user_id = None
         self.char_list = []
-        self.active_tokens = set()
         self.authenticated = False
         self.player_data = {}
         self.current_character = None
@@ -93,10 +110,11 @@ class ClientSession:
         self.entry_level = None
         self.world_loaded = False
         self.spawned_npcs = []
-        self.npc_states = {}
         self.entities = {}
         self.clientEntID = None
         self.running = True
+
+
 
     def stop(self):
         self.running = False
@@ -110,20 +128,46 @@ class ClientSession:
         return self.entities.get(entity_id)
 
     def issue_token(self, char, target_level, previous_level):
-        tk = new_transfer_token()
-        # Use session.current_level if previous_level is None
-        previous_level = previous_level if previous_level else self.current_level or char.get("PreviousLevel",
-                                                                                              "NewbieRoad")
-        pending_world[tk] = (char, target_level, previous_level)
-        self.active_tokens.add(tk)
-        #print(f"[{self.addr}] Issued token {tk} for {char['name']} to {target_level}, previous={previous_level}")
+        # Backward-compat wrapper: we now keep a persistent token per session
+        tk = self.ensure_token(char, target_level=target_level, previous_level=previous_level)
+        return tk
+
+    def ensure_token(self, char, target_level=None, previous_level=None):
+        key = (char.get("user_id"), char.get("name"))
+        if key in char_tokens:
+            tk = char_tokens[key]
+        else:
+            tk = new_transfer_token()
+            char_tokens[key] = tk
+            token_char[tk] = key
+        self.clientEntID = tk
+        session_by_token[tk] = self
         return tk
 
     def cleanup(self):
         try: self.conn.close()
         except: pass
+
+        if self.clientEntID in session_by_token:
+            session_by_token.pop(self.clientEntID, None)
+        if self.current_level:
+
+            _level_remove(self.current_level, self)
         if self in all_sessions:
             all_sessions.remove(self)
+
+        if self.user_id in extended_sent_map:
+            extended_sent_map[self.user_id]["last_seen"] = time.time()
+
+
+def prune_extended_sent_map(timeout: int = 5):
+    """Remove users from extended_sent_map if they haven't reconnected in 'timeout' seconds."""
+    now = time.time()
+    for uid, data in list(extended_sent_map.items()):
+        if now - data.get("last_seen", now) > timeout:
+            extended_sent_map.pop(uid, None)
+            print(f"[DEBUG] Cleared extended_sent_map for user_id={uid} (timeout expired)")
+
 
 def read_exact(conn, n):
     buf = b""
@@ -139,7 +183,11 @@ def handle_client(session: ClientSession):
     addr = session.addr
     print("Connected:", addr)
     conn.settimeout(300)
+
     tick_npc_brains(all_sessions)
+
+    prune_extended_sent_map(timeout=5)
+
     # On login, reschedule future research
     if session.user_id:
         now = int(time.time())
@@ -213,12 +261,12 @@ def handle_client(session: ClientSession):
                     _ = br.read_string()  # skip next
                     _ = br.read_string()  # skip next
                 except Exception as e:
-                    print(f"[{session.addr}] [PKT0x14] Error parsing packet: {e}, raw payload={data[4:].hex()}")
+                    #print(f"[{session.addr}] [PKT0x14] Error parsing packet: {e}, raw payload={data[4:].hex()}")
                     continue
                 accounts = load_accounts()
                 user_id = accounts.get(email)
                 if not user_id:
-                    print(f"[{session.addr}] [PKT0x14] Login failed—no account for {email}")
+                    #print(f"[{session.addr}] [PKT0x14] Login failed—no account for {email}")
                     conn.sendall(build_popup_packet("Account not found", disconnect=True))
                     continue
                 session.user_id = user_id
@@ -230,8 +278,8 @@ def handle_client(session: ClientSession):
                 session.char_list = session.player_data.get("characters", [])
                 session.authenticated = True
                 conn.sendall(build_login_character_list_bitpacked(session.char_list))
-                print(
-                    f"[{session.addr}] [PKT0x14] Logged in {email} → user_id={user_id}, chars={len(session.char_list)}")
+                #print(f"[{session.addr}] [PKT0x14] Logged in {email} → user_id={user_id}, chars={len(session.char_list)}")
+
 
             elif pkt == 0x17:# Done
                 if not session.authenticated:
@@ -255,8 +303,8 @@ def handle_client(session: ClientSession):
                         br.read_bits(24),  # pantColor
                         None  # equipped_gear
                     )
-                    #print(
-                       # f"[{session.addr}] [PKT0x17] Parsed character creation: name={tup[0]}, class={tup[1]}, gender={tup[3]}")
+                    #print(f"[{session.addr}] [PKT0x17] Parsed character creation: name={tup[0]}, class={tup[1]}, gender={tup[3]}")
+
                 except Exception as e:
                     #print(f"[{session.addr}] [PKT0x17] Error parsing packet: {e}, raw payload={data[4:].hex()}")
                     continue
@@ -276,8 +324,8 @@ def handle_client(session: ClientSession):
                 # Send paperdoll packet (0x1A)
                 pd = build_paperdoll_packet(new_char)
                 conn.sendall(struct.pack(">HH", 0x1A, len(pd)) + pd)
-                #print(
-                    #f"[{session.addr}] [PKT0x17] Sent 0x1A paperdoll packet, len={len(pd)},")
+                #print(f"[{session.addr}] [PKT0x17] Sent 0x1A paperdoll packet, len={len(pd)},")
+
                 # Send popup message (0x1B)
                 popup = build_popup_packet("Character Successfully Created", disconnect=False)
                 conn.sendall(popup)
@@ -294,7 +342,10 @@ def handle_client(session: ClientSession):
                         c["user_id"] = session.user_id
                         # Set default PreviousLevel if unset
                         prev_name = c.get("PreviousLevel", {}).get("name", "NewbieRoad")
-                        tk = session.issue_token(c, target_level=current_level, previous_level=prev_name)
+                        tk = session.ensure_token(c, target_level=current_level, previous_level=prev_name)
+                        session.clientEntID = tk
+                        session_by_token[tk] = session
+                        _level_add(current_level, session)
 
                         level_config = LEVEL_CONFIG.get(current_level, ("LevelsNR.swf/a_Level_NewbieRoad", 1, 1, False))
 
@@ -325,6 +376,7 @@ def handle_client(session: ClientSession):
                             char=c
                         )
                         session.conn.sendall(pkt_out)
+                        pending_world[tk] = (c, current_level, prev_name)
                         # Save updated char_list to ensure PreviousLevel is set
                         session.char_list = load_characters(session.user_id)
                         for i, char in enumerate(session.char_list):
@@ -338,19 +390,19 @@ def handle_client(session: ClientSession):
             #the 0x1f and 0x1D needs to be rewritten and organised since the code is a mess
             elif pkt == 0x1f:
                 if len(data) < 6:
-                    print(f"[{session.addr}] Error: Packet 0x1f too short, len={len(data)}")
+                    #print(f"[{session.addr}] Error: Packet 0x1f too short, len={len(data)}")
                     continue
                 token = int.from_bytes(data[4:6], 'big')
-                entry = pending_world.pop(token, None)
+
+                entry = used_tokens.get(token) or pending_world.get(token)
+                # do not pop; tokens are persistent now
                 if entry is None:
                     if len(pending_world) == 1:
                         token, entry = next(iter(pending_world.items()))
-                        pending_world.pop(token)
                     else:
-                        print(
-                            f"[{session.addr}] Error: No entry found for token {token}, pending_world size={len(pending_world)}")
+                        #print(f"[{session.addr}] Error: No entry found for token {token}, pending_world size={len(pending_world)}")
                         continue
-                session.active_tokens.discard(token)
+
                 if len(entry) == 2:
                     char, target_level = entry
                     previous_level = session.current_level or char.get("PreviousLevel", {}).get("name", "NewbieRoad")
@@ -359,7 +411,7 @@ def handle_client(session: ClientSession):
                     if isinstance(previous_level, dict):
                         previous_level = previous_level.get("name", "NewbieRoad")
                 if char is None:
-                    print(f"[{session.addr}] Error: Character is None for token {token}")
+                    #print(f"[{session.addr}] Error: Character is None for token {token}")
                     continue
                 is_dungeon = LEVEL_CONFIG.get(target_level, (None, None, None, False))[3]
                 if is_dungeon:
@@ -368,7 +420,7 @@ def handle_client(session: ClientSession):
                     session.entry_level = None
                 session.user_id = char["user_id"]
                 if not session.user_id:
-                    print(f"[{session.addr}] Error: session.user_id is None for token {token}")
+                    #print(f"[{session.addr}] Error: session.user_id is None for token {token}")
                     continue
                 session.char_list = load_characters(session.user_id)
                 if session.char_list:
@@ -381,29 +433,21 @@ def handle_client(session: ClientSession):
                 else:
                     session.char_list = [char]
                 save_characters(session.user_id, session.char_list)
-                #print(
-                    #f"[{session.addr}] Saved character {char['name']}: CurrentLevel={char['CurrentLevel']}, PreviousLevel={char.get('PreviousLevel')}")
+                #print(f"[{session.addr}] Saved character {char['name']}: CurrentLevel={char['CurrentLevel']}, PreviousLevel={char.get('PreviousLevel')}")
+                pending_world.pop(token, None)
 
                 session.current_level = target_level
                 session.current_character = char["name"]
                 session.current_char_dict = char
                 current_characters[session.user_id] = session.current_character
                 session.authenticated = True
-                session.entities[token] = {
-                    "id": token,
-                    "x": 360.0,
-                    "y": 1458.99,
-                    "z": 0.0,
-                    "entState": Entity.const_6,
-                    "is_player": True,
-                    "name": char["name"],
-                    "hp": char.get("hp", 100),
-                    "max_hp": char.get("max_hp", 100)
-                }
                 used_tokens[token] = (
                     char, target_level, session.current_level or char.get("PreviousLevel", "NewbieRoad"))
                 # Calculate coordinates for Player_Data_Packet
                 new_x, new_y, new_has_coord = get_spawn_coordinates(char, previous_level, target_level)
+                user_id = session.user_id  # however you’re tracking the account
+                send_ext = not extended_sent_map.get(user_id, {}).get("sent", False)
+
                 welcome = Player_Data_Packet(
                     char,
                     transfer_token=token,
@@ -411,13 +455,30 @@ def handle_client(session: ClientSession):
                     new_x=int(round(new_x)),
                     new_y=int(round(new_y)),
                     new_has_coord=new_has_coord,
+                    send_extended=send_ext
                 )
+
+                extended_sent_map[user_id] = {"sent": True, "last_seen": time.time()}
 
                 conn.sendall(welcome)
                 session.clientEntID = token
 
-                #print(
-                    #f"[{session.addr}] Welcome: {char['name']} (token {token}) on level {session.current_level}, pos=({new_x},{new_y})")
+                #print(f"[{session.addr}] Welcome: {char['name']} (token {token}) on level {session.current_level}, pos=({new_x},{new_y})")
+
+                #TODO...
+                # Force NPC load temporarily For testing
+                # we will remove this and implement it properly once we are sure Send_Entity_Data is working properly
+                try:
+                    npcs = load_npc_data_for_level(session.current_level)
+                    for npc in npcs:
+                        payload = Send_Entity_Data(npc)
+                        conn.sendall(struct.pack(">HH", 0x0F, len(payload)) + payload)
+                        session.entities[npc["id"]] = npc
+                        session.spawned_npcs.append(npc)
+
+                    #print(f"[{session.addr}] NPCs manually triggered after world update")
+                except Exception as e:
+                    print(f"[{session.addr}] Error spawning NPCs: {e}")
 
 
             # Level Transfer request
@@ -427,13 +488,23 @@ def handle_client(session: ClientSession):
                     _old_token = br.read_method_9()
                     level_name = br.read_method_13()
                 except Exception as e:
-                    print(f"[{session.addr}] ERROR: Failed to parse 0x1D packet: {e}, raw payload = {data[4:].hex()}")
+                    #print(f"[{session.addr}] ERROR: Failed to parse 0x1D packet: {e}, raw payload = {data[4:].hex()}")
                     continue
-                #print(f"[{session.addr}] TRANSFER_READY → {level_name}, old_token={_old_token}")
-                # 1) Pull the pending entry
-                entry = pending_world.pop(_old_token, None) or used_tokens.get(_old_token)
+
+                # 1) Pull the entry (no longer popped; tokens are persistent)
+                entry = used_tokens.get(_old_token) or pending_world.get(_old_token)
                 if not entry:
-                    print(f"[{session.addr}] ERROR: No character for token {_old_token}")
+                    # try resolve by session token
+                    s = session_by_token.get(_old_token)
+                    if s:
+                        entry = (
+                        getattr(s, "current_char_dict", None) or {"name": s.current_character, "user_id": s.user_id},
+                        s.current_level)
+
+
+
+                if not entry:
+                    #print(f"[{session.addr}] ERROR: No character for token {_old_token}")
                     continue
                 # 2) Unpack character and target_level
                 char, target_level = entry[:2]
@@ -447,11 +518,11 @@ def handle_client(session: ClientSession):
                 # 4) Clear player’s entity from old level to reflect they’ve left
                 if session.clientEntID in session.entities:
                     del session.entities[session.clientEntID]
-                    print(f"[{session.addr}] Removed entity {session.clientEntID} from level {old_level}")
+                    #print(f"[{session.addr}] Removed entity {session.clientEntID} from level {old_level}")
                 # 5) Bootstrap session with this character
                 session.user_id = char.get("user_id")
                 if not session.user_id:
-                    print(f"[{session.addr}] ERROR: char['user_id'] missing for {char['name']}")
+                    #print(f"[{session.addr}] ERROR: char['user_id'] missing for {char['name']}")
                     continue
                 session.char_list = load_characters(session.user_id)
                 session.current_character = char["name"]
@@ -459,7 +530,7 @@ def handle_client(session: ClientSession):
                 # 6) If the packet's level_name is empty, fallback
                 if not level_name:
                     level_name = target_level
-                    print(f"[{session.addr}] WARNING: Empty level_name, using target_level={level_name}")
+                    #print(f"[{session.addr}] WARNING: Empty level_name, using target_level={level_name}")
                 # 7) Update the character record
                 is_dungeon = LEVEL_CONFIG.get(level_name, (None, None, None, False))[3]
 
@@ -487,19 +558,25 @@ def handle_client(session: ClientSession):
                 else:
                     session.char_list.append(char)
                 save_characters(session.user_id, session.char_list)
-                #print(f"[{session.addr}] Saved character {char['name']}: "
-                     # f"CurrentLevel={char['CurrentLevel']}, PreviousLevel={char['PreviousLevel']}")
+                #print(f"[{session.addr}] Saved character {char['name']}: "f"CurrentLevel={char['CurrentLevel']}, PreviousLevel={char['PreviousLevel']}")
+
                 # 9) Update session.current_level
                 session.current_level = level_name
                 session.world_loaded = False
                 # 10) For testing purposes only; uncomment to broadcast level change, remove after testing
                 #broadcast_level_change(session, char["name"], level_name)
                 # 11) Issue the new transfer token
-                new_token = session.issue_token(
+
+                # Keep the same transfer token (persistent per session)
+                new_token = session.ensure_token(
                     char,
                     target_level=level_name,
                     previous_level=old_level
                 )
+                pending_world[new_token] = (char, level_name, old_level)
+
+
+
                 # 12) Build and send the ENTER_WORLD packet, including info about the level we just left
                 #    old_level     := the name of the level we departed
                 #    prev_rec      := char["PreviousLevel"] ⟶ {name, x, y}
@@ -542,25 +619,25 @@ def handle_client(session: ClientSession):
                     char=char,
                 )
                 session.conn.sendall(pkt_out)
-                #print(
-                    #f"[{session.addr}] Sent ENTER_WORLD with token {new_token} for level {level_name}, pos=({new_x},{new_y})")
+                #print(f"[{session.addr}] Sent ENTER_WORLD with token {new_token} for level {level_name}, pos=({new_x},{new_y})")
+
 
             elif pkt == 0x2D:
                 br = BitReader(data[4:])
                 try:
                     door_id = br.read_method_9()
                 except Exception as e:
-                    print(f"[{session.addr}] ERROR: Failed to parse 0x2D packet: {e}, raw payload = {data[4:].hex()}")
+                    #print(f"[{session.addr}] ERROR: Failed to parse 0x2D packet: {e}, raw payload = {data[4:].hex()}")
                     continue
-                print(f"[{session.addr}] OpenDoor request: doorID={door_id}, current_level={session.current_level}")
+                #print(f"[{session.addr}] OpenDoor request: doorID={door_id}, current_level={session.current_level}")
                 is_dungeon = LEVEL_CONFIG.get(session.current_level, (None, None, None, False))[3]
                 # Determine target level
                 target_level = None
                 if is_dungeon and door_id in (0, 1, 2):
                     target_level = session.entry_level
                     if not target_level:
-                        print(
-                            f"[{session.addr}] Error: No entry_level set for door {door_id} in dungeon {session.current_level}")
+                        #print(f"[{session.addr}] Error: No entry_level set for door {door_id} in dungeon {session.current_level}")
+
                         continue
                 elif door_id == 999:
                     target_level = "CraftTown"
@@ -568,7 +645,7 @@ def handle_client(session: ClientSession):
                     target_level = DOOR_MAP.get((session.current_level, door_id))
                 if target_level:
                     if target_level not in LEVEL_CONFIG:
-                        print(f"[{session.addr}] Error: Target level {target_level} not found in LEVEL_CONFIG")
+                        #print(f"[{session.addr}] Error: Target level {target_level} not found in LEVEL_CONFIG")
                         continue
                     # Send DOOR_TARGET response
                     bb = BitBuffer()
@@ -577,7 +654,7 @@ def handle_client(session: ClientSession):
                     payload = bb.to_bytes()
                     resp = struct.pack(">HH", 0x2E, len(payload)) + payload
                     session.conn.sendall(resp)
-                    print(f"[{session.addr}] Sent DOOR_TARGET: doorID={door_id}, level='{target_level}'")
+                    #print(f"[{session.addr}] Sent DOOR_TARGET: doorID={door_id}, level='{target_level}'")
                     # Reset world state
                     session.world_loaded = False
                     session.entities.clear()
@@ -602,20 +679,6 @@ def handle_client(session: ClientSession):
                 handle_power_cast(session, data, all_sessions)
             elif pkt == 0x08:  # Done
                 handle_entity_full_update(session, data, all_sessions)
-
-                # Force NPC load temporarily For testing
-                # we will remove this and implement it properly once we are sure Send_Entity_Data is working properly
-                try:
-                    npcs = load_npc_data_for_level(session.current_level)
-                    for npc in npcs:
-                        payload = Send_Entity_Data(npc)
-                        conn.sendall(struct.pack(">HH", 0x0F, len(payload)) + payload)
-                        session.entities[npc["id"]] = npc
-                        session.spawned_npcs.append(npc)
-
-                    #print(f"[{session.addr}] NPCs manually triggered after world update")
-                except Exception as e:
-                    print(f"[{session.addr}] Error spawning NPCs: {e}")
             ###################################
 
 

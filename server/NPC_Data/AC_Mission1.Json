@@ -13,7 +13,7 @@
       "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 20,
+      "summonerId": 0,
       "power_id": 0,
       "facing_left": true,
       "health_delta": 5,

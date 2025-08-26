@@ -1,5 +1,6 @@
 .idea/
 __pycache__/
 *.pyc
-Accounts.json/
+Accounts.json
 saves/
+server/Accounts.json

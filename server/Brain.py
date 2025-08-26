@@ -7,7 +7,7 @@ from BitUtils import BitBuffer
 AGGRO_RADIUS = 250          # match client
 LEASH_DISTANCE = 600        # simple leash
 NPC_SPEED = 180.0           # units/sec horizontal chase speed
-TICK_MS = 100               # brain tick interval
+TICK_MS = 1               # brain tick interval
 
 # Minimal constants (use your real values if available)
 class _EntityConsts:

@@ -3,7 +3,8 @@ import os
 
 from BitUtils import BitBuffer
 from constants import Entity, class_7, class_20, class_3, Game, class_118, \
-    LinkUpdater, EntType, GearType, class_64, class_21, method_277
+    LinkUpdater, EntType, GearType, class_64, class_21, method_277, GAME_CONST_209, NUM_TALENT_SLOTS, \
+    CLASS_118_CONST_127, SLOT_BIT_WIDTHS
 from typing import Dict, Any
 
 npc_cache = {}
@@ -24,7 +25,7 @@ Hints NPCs data
       "Linked_Mission": "NR_Mayor01", 
       "DramaAnim": "",
       "SleepAnim": "",
-      "NPClevel": 0,
+      "level": 0,
       "power_id": 0,
       "entState": 0,
       "facing_left": true,
@@ -172,50 +173,68 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
     # 4) team
     bb.write_method_6(entity.get('team', 0), Entity.TEAM_BITS)
 
-    # TODO... im not sure where exactly but this branch is causing the bitstream to break
-    #  leading to the player level reading wrong and some other things  if Player branches are off(False) the NPCs spawn properly
-    #  (at least i think so...)
+
     # ── PLAYER VS NPC BRANCH ──
     if entity.get("is_player", False):
         # 5a) Signal “yes, player data follows”
         bb.write_bits(1, 1)
 
-        # 5b) Player level (6 bits on client)
-        bb.write_method_6(entity.get('PlayerLevel', 0), Entity.MAX_CHAR_LEVEL_BITS)
 
-        # 5c)
-        bb.write_method_6(entity.get('game_mode', 0), Game.const_209)
+        # 5b) Write _loc13_ (timing flag for method_1273)
+        timing_flag = entity.get("set_timing_flag", False)  # True for new spawns or significant updates
+        bb.write_bits(1 if timing_flag else 0, 1)
+        if bb.debug:
+            bb.debug_log.append(f"timing_flag={timing_flag}")
 
-        # 5d) Talent‐points block
-        talents = entity.get('talents', [])  # list of (node_index, points_spent)
-        bb.write_bits(1 if talents else 0, 1)
-        if talents:
-            # client loops over const_43 slots
-            for slot_index in range(class_118.NUM_TALENT_SLOTS):
-                matching = next((t for t in talents if t[0] == slot_index), None)
-                bb.write_bits(1 if matching else 0, 1)
-                if matching:
-                    node_id, points = matching
-                    # write tier modifier (computed client‐side via method_277)
-                    tier = method_277(slot_index)
-                    bb.write_method_6(tier, class_118.const_127)
-                    # write “points minus one” (client adds back 1)
-                    bb.write_method_6(points - 1, class_118.const_127)
+
+
+        # 5c) Write _loc14_ (appearance flag for method_1646)
+        appearance_flag = entity.get("show_appearance_effect", False)  # True for new spawns or teleports
+        bb.write_bits(1 if appearance_flag else 0, 1)
+        if bb.debug:
+            bb.debug_log.append(f"appearance_flag={appearance_flag}")
+
+        #the actual purpose of these 4 lines  are currently unknown but the client reads the data properly
+        # ====================================
+        # Pet ID
+        bb.write_method_6(entity.get("PetTypeID", 0), class_7.const_19)
+
+        bb.write_method_6(entity.get("PetLevel", 0), class_7.const_75)
+
+        bb.write_method_6(entity.get("MountID", 0), class_20.const_297)
+
+        bb.write_method_6(entity.get("Emote_ID", 0), class_3.const_69)
+
+        # ====================================
+
+        abilities = entity.get("abilities", [])
+        has_abilities = len(abilities) > 0
+        bb.write_bits(1 if has_abilities else 0, 1)
+        if bb.debug:
+            bb.debug_log.append(f"has_abilities={has_abilities}")
+        if has_abilities:
+            for i in range(3):
+                ability = abilities[i] if i < len(abilities) and abilities[i] is not None else {"abilityID": 0, "rank": 0}
+                bb.write_method_6(ability.get("abilityID", 0), class_7.const_19)
+                bb.write_method_6(ability.get("rank", 0), class_7.const_75)
+                if bb.debug:
+                    bb.debug_log.append(
+                        f"ability_{i + 1}_abilityID={ability.get('abilityID', 0)}, rank={ability.get('rank', 0)}")
+
     else:
         # 5a) NPCs skip the player block
         bb.write_bits(0, 1)
 
-    bb.write_bits(1 if entity.get("untargetable", False) else 0, 1)
+        bb.write_bits(1 if entity.get("untargetable", False) else 0, 1)
 
-    bb.write_method_739(entity.get("render_depth_offset", 0))
+        bb.write_method_739(entity.get("render_depth_offset", 0))
 
-    speed = entity.get("behavior_speed", 0)
-    if speed > 0:
-        bb.write_bits(1, 1)
-        bb.write_method_4(int(speed * LinkUpdater.VELOCITY_INFLATE))
-    else:
-        bb.write_bits(0, 1)
-
+        speed = entity.get("behavior_speed", 0)
+        if speed > 0:
+            bb.write_bits(1, 1)
+            bb.write_method_4(int(speed * LinkUpdater.VELOCITY_INFLATE))
+        else:
+            bb.write_bits(0, 1)
 
     for key in ("Linked_Mission", "DramaAnim", "SleepAnim"):
         val = entity.get(key, "")
@@ -223,15 +242,26 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
         if val:
             bb.write_method_13(val)
 
-    # 7) NPC Entity Level
-    bb.write_bits(1, 1)
-    bb.write_method_4(entity.get("NPClevel", 0))
+    # 7)  Entity Level
+    summoner_id = entity.get("summonerId", 0)
+    if summoner_id:
+        bb.write_bits(1, 1)
+        bb.write_method_4(summoner_id)
+        if bb.debug:
+            bb.debug_log.append(f"summonerId = {summoner_id}")
+    else:
+        bb.write_bits(0, 1)
 
     # 8) power type
-    pid = entity.get("power_id", 0)
-    bb.write_bits(1 if pid else 0, 1)
-    if pid:
-        bb.write_method_4(pid)
+    power_id = entity.get("power_id", 0)
+
+    if power_id > 0:
+        bb.write_bits(1, 1)  # flag: has PowerType
+        bb.write_method_4(power_id)  # the index into class_14.powerTypes
+        if bb.debug:
+            bb.debug_log.append(f"powerTypeID = {power_id}")
+    else:
+        bb.write_bits(0, 1)  # flag: no PowerType
 
     # 9) entity state
     bb.write_method_6(entity.get("entState", 0), Entity.const_316)
@@ -239,32 +269,54 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
     # 10) facing left
     bb.write_bits(1 if entity.get("facing_left", False) else 0, 1)
 
+
+    if entity.get('is_player', False):
+
+
+        # 5e) Player level and Currently unknown
+        level = entity.get("PlayerLevel", 0)
+        bb.write_method_6(level, Entity.MAX_CHAR_LEVEL_BITS)
+        if bb.debug:
+            bb.debug_log.append(f"player_level={level}")
+
+        class_id = entity.get("Talent_id", Game.const_526)
+        bb.write_method_6(class_id, Game.const_209)
+        if bb.debug:
+            bb.debug_log.append(f"Talent_id={class_id}")
+
+        # we are not sending any Talent Data
+        bb.write_bits( 0, 1)
+
+        #TODO...
+        #this will crash the game not sure why the game seems to read the bitstream properly
+        """ 
+        # 5f) Talent Nodes / Upgrades
+        talents = entity.get("talents", [])
+        has_talents = any(t for t in talents if t)  # at least one slot filled
+        bb.write_bits(1 if has_talents else 0, 1)
+
+        if has_talents:
+            for slot in range(NUM_TALENT_SLOTS):  # always 27 slots
+                t = talents[slot] if slot < len(talents) and talents[slot] else None
+                if t and t.get("nodeID", 0) > 0 and t.get("points", 0) > 0:
+                    node_id = t["nodeID"]
+                    points = t["points"]
+                    bb.write_bits(1, 1)  # slot filled
+                    bb.write_method_6(node_id, CLASS_118_CONST_127)  # 6 bits for nodeID
+                    bb.write_method_6(points - 1, method_277(slot))  # N bits for points
+
+                else:
+                    bb.write_bits(0, 1)  # empty slot
+        """
+
+    else:
+        bb.write_bits(0, 1)
+
+
     # 11) HP delta
     value = int(round(entity.get("health_delta", 0)))
     bb.write_signed_method_45(value)
 
-    #this is likely meant to be used when a player has a mount or a pet equipped
-    # ── MOUNTS & PETS ──
-    # The client only reads mounts/pets if it saw the initial mount flag (Game.const_526)
-    if entity.get('has_mount', False):
-        bb.write_bits(1, 1)  # signal “mounts/pets follow”
-        # mount flags (2 booleans), mount ID (7 bits), mount level (6 bits), mount type (7 bits)
-        bb.write_bits(1 if entity.get('is_local_player', False) else 0, 1)
-        bb.write_bits(1 if entity.get('uses_vanity_mount', False) else 0, 1)
-        bb.write_method_6(entity.get('mount_id', 0), class_7.const_19)
-        bb.write_method_6(entity.get('mount_level', 0), class_7.const_75)
-        bb.write_method_6(entity.get('mount_type', 0), class_20.const_297)
-        # pet-food slot (5 bits)
-        bb.write_method_6(entity.get('petfood_slot', 0), class_3.const_69)
-
-        # pets block
-        pets = entity.get('pets', [])  # list of up to 3 (pet_id, pet_level)
-        bb.write_bits(1 if pets else 0, 1)
-        for pet in pets:
-            bb.write_method_6(pet[0], class_7.const_19)
-            bb.write_method_6(pet[0], class_7.const_75)
-    else:
-        bb.write_bits(0, 1)  # no mounts/pets
 
     # 12) buffs
     buffs = entity.get("buffs", [])

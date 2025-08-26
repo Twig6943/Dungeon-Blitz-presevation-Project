@@ -440,231 +440,6 @@ def handle_gear_packet(session, raw_data):
     session.conn.sendall(resp)
     print(f"[Reply 0x31] echoed equip update")
 
-def handle_apply_dyes(session, payload):
-    from copy import deepcopy
-
-    CHARGE_PER_SLOT = False  # set True if you want to charge once per slot (instead of per individual dye)
-
-    br = BitReader(payload)
-
-    try:
-        entity_id = br.read_method_4()
-        dyes_by_slot = {}
-        # Read gear-slot dye pairs (presence bit + two dye IDs)
-        for slot in range(1, EntType.MAX_SLOTS):
-            has_pair = br.read_bits(1)
-            if has_pair:
-                d1 = br.read_bits(DyeType.BITS)
-                d2 = br.read_bits(DyeType.BITS)
-                dyes_by_slot[slot - 1] = (d1, d2)
-
-        # preview bit + optional shirt/pants (client uses presence bits)
-        preview_only = bool(br.read_bits(1))
-        primary_dye = br.read_bits(DyeType.BITS) if br.read_bits(1) else None
-        secondary_dye = br.read_bits(DyeType.BITS) if br.read_bits(1) else None
-    except Exception as e:
-        print(f"[Dyes] ERROR parsing dye packet: {e}")
-        return
-
-    # Debug: raw parsed packet
-    print(f"[Dyes] entity={entity_id}, dyes_by_slot={dyes_by_slot}, preview={preview_only}, shirt={primary_dye}, pants={secondary_dye}")
-
-    # Find the active character record
-    for char in session.char_list:
-        if char.get("name") != session.current_character:
-            continue
-
-        # Ensure gear/inventory lists exist
-        eq = char.setdefault("equippedGears", [])
-        inv = char.setdefault("inventoryGears", [])
-
-        # Determine which "level" field to use that matches client.
-        level = int(char.get("level", char.get("mExpLevel", 1)) or 1)
-        # clamp index into cost tables (protect bounds)
-        per_gold_idx = min(max(level, 0), len(Entity.Dye_Gold_Cost) - 1)
-        per_idol_idx = min(max(level, 0), len(Entity.Dye_Idols_Cost) - 1)
-        per_gold = Entity.Dye_Gold_Cost[per_gold_idx]
-        per_idol = Entity.Dye_Idols_Cost[per_idol_idx]
-
-        # Load current dye info from equippedGears (keep missing slots default (0,0))
-        current_dyes_by_slot = {}
-        for idx, gear in enumerate(eq):
-            current_dyes_by_slot[idx] = tuple(gear.get("colors", [0, 0]))
-
-        # Count changes
-        slots_changed = 0              # number of gear slots where any dye changed
-        individual_dyes_changed = 0   # number of individual dye changes (0..2 per slot)
-
-        for slot, (new_d1, new_d2) in dyes_by_slot.items():
-            # Only count changes for slots that have an equipped gear (avoid charging for empty slots)
-            if slot >= len(eq):
-                # client may send pairs for empty slots — ignore them
-                continue
-            gear = eq[slot]
-            if not gear or gear.get("gearID", 0) == 0:
-                # nothing equipped in slot — ignore
-                continue
-            old_d1, old_d2 = current_dyes_by_slot.get(slot, (0, 0))
-            slot_diff = 0
-            if new_d1 != old_d1:
-                individual_dyes_changed += 1
-                slot_diff = 1
-            if new_d2 != old_d2:
-                individual_dyes_changed += 1
-                slot_diff = 1
-            if slot_diff:
-                slots_changed += 1
-
-        # Clothing (shirt/pant) changes are FREE — do not charge
-        # If you ever need to charge for them, remove these lines and include them in the counts.
-        # (Client appears to only charge gear slots.)
-        # If you want to include shirts/pants for some reason:
-        # if primary_dye and primary_dye != 0 and primary_dye != char.get("shirtColor", 0):
-        #     individual_dyes_changed += 1
-        # if secondary_dye and secondary_dye != 0 and secondary_dye != char.get("pantColor", 0):
-        #     individual_dyes_changed += 1
-
-        # Choose whether billing per-dye or per-slot
-        if CHARGE_PER_SLOT:
-            charge_units = slots_changed
-            unit_type = "slot(s)"
-        else:
-            charge_units = individual_dyes_changed
-            unit_type = "individual dye(s)"
-
-        gold_cost = per_gold * charge_units
-        idol_cost = per_idol * charge_units
-
-        print(f"[Dyes] Level={level}, per-dye cost={per_gold} gold / {per_idol} idols (indexes g={per_gold_idx}, i={per_idol_idx})")
-        print(f"[Dyes] slot_count_sent={len(dyes_by_slot)}, slots_changed={slots_changed}, "
-              f"individual_dyes_changed={individual_dyes_changed}, charge_units={charge_units} ({unit_type}), "
-              f"total_gold_cost={gold_cost}, total_idol_cost={idol_cost}")
-        print(f"[Dyes] Player balance before: gold={char.get('gold',0)}, idols={char.get('mammothIdols',0)}")
-
-        # If preview_only: send client the sync (so UI previews) but DO NOT persist or charge
-        if preview_only:
-            print("[Dyes] Preview only — sending sync, no charge or persistent save")
-            send_dye_sync_packet(
-                session,
-                entity_id,
-                dyes_by_slot,
-                char.get("shirtColor"),
-                char.get("pantColor")
-            )
-            return
-
-        # Charging: prefer gold, fall back to idols if not enough gold
-        if charge_units > 0:
-            if char.get("gold", 0) >= gold_cost:
-                char["gold"] = char.get("gold", 0) - gold_cost
-                payment_used = "gold"
-                payment_amount = gold_cost
-            elif char.get("mammothIdols", 0) >= idol_cost:
-                char["mammothIdols"] = char.get("mammothIdols", 0) - idol_cost
-                payment_used = "idols"
-                payment_amount = idol_cost
-            else:
-                print(f"[Dyes] ERROR: Not enough gold ({char.get('gold',0)}) or idols ({char.get('mammothIdols',0)}) "
-                      f"for {char['name']}. Required gold={gold_cost}, idols={idol_cost}. Cancelling.")
-                # Optionally you can send a popup packet to the client here
-                return
-            print(f"[Dyes] Charged {payment_amount} {payment_used} from {char['name']}")
-        else:
-            print("[Dyes] No charge required (nothing changed)")
-
-        # Apply gear dyes & mirror into inventory (persisted because not preview)
-        for slot, (d1, d2) in dyes_by_slot.items():
-            if slot < len(eq):
-                eq_slot = eq[slot]
-                if not eq_slot or eq_slot.get("gearID", 0) == 0:
-                    continue
-                eq_slot["colors"] = [d1, d2]
-                gear_id = eq_slot.get("gearID")
-                # update inventory copy if present, otherwise add the equipped item to inventory for persistence
-                for g in inv:
-                    if g.get("gearID") == gear_id:
-                        g["colors"] = [d1, d2]
-                        break
-                else:
-                    inv.append(eq_slot.copy())
-
-        # Shirt/pants dyes (FREE)
-        if primary_dye is not None:
-            color = get_dye_color(primary_dye)
-            if color is not None:
-                char["shirtColor"] = color
-            else:
-                print(f"[Dyes] Warning: unknown primary dye id {primary_dye}")
-
-        if secondary_dye is not None:
-            color = get_dye_color(secondary_dye)
-            if color is not None:
-                char["pantColor"] = color
-            else:
-                print(f"[Dyes] Warning: unknown secondary dye id {secondary_dye}")
-
-        # persist
-        save_characters(session.user_id, session.char_list)
-        session.player_data["characters"] = session.char_list  # <-- IMPORTANT
-
-        print(f"[Save] Dye info applied for {session.current_character} and saved. New balances: "
-              f"gold={char.get('gold', 0)}, idols={char.get('mammothIdols', 0)}")
-
-        # send sync to client
-        char_data = next(c for c in session.char_list if c.get("name") == session.current_character)
-        send_dye_sync_packet(
-            session,
-            entity_id,
-            dyes_by_slot,
-            char_data.get("shirtColor"),
-            char_data.get("pantColor")
-        )
-        return
-
-    print(f"[Dyes] ERROR: character {session.current_character} not found")
-    return
-
-
-
-def send_dye_sync_packet(session, entity_id, dyes_by_slot, shirt_color=None, pant_color=None):
-        bb = BitBuffer()
-        bb.write_method_4(entity_id)
-
-        eq = []
-        for char in session.player_data.get("characters", []):
-            if char.get("name") == session.current_character:
-                eq = char.get("equippedGears", [])
-                break
-
-        for slot in range(1, EntType.MAX_SLOTS):
-            gear = eq[slot - 1] if slot - 1 < len(eq) else None
-            if gear and "colors" in gear:
-                d1, d2 = gear["colors"]
-                bb.write_bits(1, 1)  # has dye pair
-                bb.write_method_6(d1, DyeType.BITS)
-                bb.write_method_6(d2, DyeType.BITS)
-            else:
-                bb.write_bits(0, 1)  # no dye pair
-
-        # Write shirt color
-        if shirt_color is not None:
-            bb.write_bits(1, 1)
-            bb.write_method_6(shirt_color, EntType.CHAR_COLOR_BITSTOSEND)
-        else:
-            bb.write_bits(0, 1)
-
-        # Write pant color
-        if pant_color is not None:
-            bb.write_bits(1, 1)
-            bb.write_method_6(pant_color, EntType.CHAR_COLOR_BITSTOSEND)
-        else:
-            bb.write_bits(0, 1)
-
-        payload = bb.to_bytes()
-        pkt = struct.pack(">HH", 0x111, len(payload)) + payload
-        session.conn.sendall(pkt)
-        print(f"[Sync] Sent dye update (0x111) to client for entity {entity_id}")
-
 def handle_rune_packet(session, raw_data):
     payload = raw_data[4:]
     br = BitReader(payload)
@@ -2179,8 +1954,200 @@ def send_npc_dialog(session, npc_id, text):
     session.conn.sendall(packet)
     print(f"[DEBUG] Sent NPC dialog: {text}")
 
+# this is required for every time MamothIdols Are used to make a purchase
+def send_premium_purchase(session, item_name: str, cost: int):
+    bb = BitBuffer()
+    bb.write_method_13(item_name)  # matches param1.method_13() in client
+    bb.write_method_4(cost)        # matches param1.method_4() in client
+    body = bb.to_bytes()
+    packet = struct.pack(">HH", 0xB5, len(body)) + body
+    session.conn.sendall(packet)
+    print(f"[DEBUG] Deducted {cost} Mammoth Idols for {item_name}")
+
+def _send_error(conn, msg):
+    encoded = msg.encode("utf-8")
+    payload = struct.pack(">H", len(encoded)) + encoded
+    conn.sendall(struct.pack(">HH", 0x102, len(payload)) + payload)
+
+
 #handled
 #############################################
+
+
+
+def handle_apply_dyes(session, payload):
+    br = BitReader(payload)
+    try:
+        entity_id = br.read_method_4()
+        dyes_by_slot = {}
+        for slot in range(1, EntType.MAX_SLOTS):
+            has_pair = br.read_bits(1)
+            if has_pair:
+                d1 = br.read_bits(DyeType.BITS)
+                d2 = br.read_bits(DyeType.BITS)
+                dyes_by_slot[slot - 1] = (d1, d2)
+
+        # This is NOT a preview flag. It's the "use idols" boolean from OnApplyDyes(..., param2)
+        pay_with_idols = bool(br.read_bits(1))
+
+        primary_dye = br.read_bits(DyeType.BITS) if br.read_bits(1) else None
+        secondary_dye = br.read_bits(DyeType.BITS) if br.read_bits(1) else None
+    except Exception as e:
+        print(f"[Dyes] ERROR parsing dye packet: {e}")
+        return
+
+    print(f"[Dyes] entity={entity_id}, dyes_by_slot={dyes_by_slot}, pay_with_idols={pay_with_idols}, shirt={primary_dye}, pants={secondary_dye}")
+
+    for char in session.char_list:
+        if char.get("name") != session.current_character:
+            continue
+
+        eq = char.setdefault("equippedGears", [])
+        inv = char.setdefault("inventoryGears", [])
+
+        level = int(char.get("level", char.get("mExpLevel", 1)) or 1)
+        g_idx = min(max(level, 0), len(Entity.Dye_Gold_Cost) - 1)
+        i_idx = min(max(level, 0), len(Entity.Dye_Idols_Cost) - 1)
+        per_gold = Entity.Dye_Gold_Cost[g_idx]
+        per_idol = Entity.Dye_Idols_Cost[i_idx]
+
+        # Load current dyes to detect changes
+        current_dyes_by_slot = {idx: tuple(gear.get("colors", [0, 0])) for idx, gear in enumerate(eq)}
+
+        slots_changed = 0
+        individual_dyes_changed = 0
+        for slot, (new_d1, new_d2) in dyes_by_slot.items():
+            if slot >= len(eq):
+                continue
+            gear = eq[slot]
+            if not gear or gear.get("gearID", 0) == 0:
+                continue
+            old_d1, old_d2 = current_dyes_by_slot.get(slot, (0, 0))
+            changed = 0
+            if new_d1 != old_d1:
+                individual_dyes_changed += 1
+                changed = 1
+            if new_d2 != old_d2:
+                individual_dyes_changed += 1
+                changed = 1
+            slots_changed += changed
+
+        # We charge per individual dye by default (match client’s UI math)
+        charge_units = individual_dyes_changed
+        gold_cost = per_gold * charge_units
+        idol_cost = per_idol * charge_units
+
+        print(f"[Dyes] Level={level}, per-dye={per_gold}g/{per_idol}i  units={charge_units}  total_gold={gold_cost}  total_idols={idol_cost}")
+        print(f"[Dyes] Bal before: gold={char.get('gold',0)} idols={char.get('mammothIdols',0)}")
+
+        # No changes? Just sync and exit
+        if charge_units == 0:
+            print("[Dyes] No changes detected — nothing to charge")
+            send_dye_sync_packet(session, entity_id, dyes_by_slot, char.get("shirtColor"), char.get("pantColor"))
+            return
+
+        # Currency enforcement: follow what the client chose
+        if pay_with_idols:
+            if char.get("mammothIdols", 0) < idol_cost:
+                print(f"[Dyes] ERROR: Not enough idols. Have {char.get('mammothIdols',0)}, need {idol_cost}")
+                return
+            char["mammothIdols"] = char.get("mammothIdols", 0) - idol_cost
+            print(f"[Dyes] Charged {idol_cost} idols")
+            # Tell client to update Mammoth Idols UI immediately
+            send_premium_purchase(session, "Dye", idol_cost)
+        else:
+            if char.get("gold", 0) < gold_cost:
+                print(f"[Dyes] ERROR: Not enough gold. Have {char.get('gold',0)}, need {gold_cost}")
+                return
+            # Client already did local gold deduction; server still authoritatively deducts
+            char["gold"] = char.get("gold", 0) - gold_cost
+            print(f"[Dyes] Charged {gold_cost} gold")
+
+        # Apply new dyes to equipped + mirror to inventory
+        for slot, (d1, d2) in dyes_by_slot.items():
+            if slot < len(eq):
+                eq_slot = eq[slot]
+                if not eq_slot or eq_slot.get("gearID", 0) == 0:
+                    continue
+                eq_slot["colors"] = [d1, d2]
+                gear_id = eq_slot.get("gearID")
+                for g in inv:
+                    if g.get("gearID") == gear_id:
+                        g["colors"] = [d1, d2]
+                        break
+                else:
+                    inv.append(eq_slot.copy())
+
+        # Shirt/pants colors (free)
+        if primary_dye is not None:
+            c = get_dye_color(primary_dye)
+            if c is not None:
+                char["shirtColor"] = c
+        if secondary_dye is not None:
+            c = get_dye_color(secondary_dye)
+            if c is not None:
+                char["pantColor"] = c
+
+        # Persist + in-memory session copy
+        save_characters(session.user_id, session.char_list)
+        session.player_data["characters"] = session.char_list
+
+        print(f"[Save] Dyes saved. New balances: gold={char.get('gold',0)} idols={char.get('mammothIdols',0)}")
+
+        # Tell client about the actual applied dyes
+        send_dye_sync_packet(
+            session,
+            entity_id,
+            dyes_by_slot,
+            char.get("shirtColor"),
+            char.get("pantColor"),
+        )
+        return
+
+    print(f"[Dyes] ERROR: character {session.current_character} not found")
+
+
+
+
+def send_dye_sync_packet(session, entity_id, dyes_by_slot, shirt_color=None, pant_color=None):
+        bb = BitBuffer()
+        bb.write_method_4(entity_id)
+
+        eq = []
+        for char in session.player_data.get("characters", []):
+            if char.get("name") == session.current_character:
+                eq = char.get("equippedGears", [])
+                break
+
+        for slot in range(1, EntType.MAX_SLOTS):
+            gear = eq[slot - 1] if slot - 1 < len(eq) else None
+            if gear and "colors" in gear:
+                d1, d2 = gear["colors"]
+                bb.write_bits(1, 1)  # has dye pair
+                bb.write_method_6(d1, DyeType.BITS)
+                bb.write_method_6(d2, DyeType.BITS)
+            else:
+                bb.write_bits(0, 1)  # no dye pair
+
+        # Write shirt color
+        if shirt_color is not None:
+            bb.write_bits(1, 1)
+            bb.write_method_6(shirt_color, EntType.CHAR_COLOR_BITSTOSEND)
+        else:
+            bb.write_bits(0, 1)
+
+        # Write pant color
+        if pant_color is not None:
+            bb.write_bits(1, 1)
+            bb.write_method_6(pant_color, EntType.CHAR_COLOR_BITSTOSEND)
+        else:
+            bb.write_bits(0, 1)
+
+        payload = bb.to_bytes()
+        pkt = struct.pack(">HH", 0x111, len(payload)) + payload
+        session.conn.sendall(pkt)
+        print(f"[Sync] Sent dye update (0x111) to client for entity {entity_id}")
+
 
 
 def PaperDoll_Request(session, data, conn):
@@ -2454,10 +2421,7 @@ def handle_respawn_ack(session, data, all_sessions):
 
 
 
-def _send_error(conn, msg):
-    encoded = msg.encode("utf-8")
-    payload = struct.pack(">H", len(encoded)) + encoded
-    conn.sendall(struct.pack(">HH", 0x102, len(payload)) + payload)
+
 
 
 def handle_group_invite(session, data, all_sessions):
@@ -2676,8 +2640,8 @@ def handle_add_buff(session, data, all_sessions):
             'param6':     param6,
             'vector':     vector if has_vector else None
         }
-        #print(f"[{session.addr}] [PKT0B] Parsed add-buff:")
-        #pprint.pprint(props, indent=4)
+        print(f"[{session.addr}] [PKT0B] Parsed add-buff:")
+        pprint.pprint(props, indent=4)
 
         # 5) Broadcast unchanged packet to peers
         for other in all_sessions:
@@ -2863,18 +2827,18 @@ def handle_power_cast(session, data, all_sessions):
                 mana_cost = br.read_method_6(MANA_BITS)
 
         props = {
-            'caster_ent_id': ent_id,
+            #'caster_ent_id': ent_id,
             'power_id':      power_id,
-            'target_pt':     target_pt,
-            'projectile_id': proj_id,
-            'is_charged':    is_charged,
-            'secondary_id':  secondary_id,
-            'tertiary_id':   tertiary_id,
-            'cooldown_tick': cooldown_tick,
-            'mana_cost':     mana_cost,
+            #'target_pt':     target_pt,
+            #'projectile_id': proj_id,
+            #'is_charged':    is_charged,
+            #'secondary_id':  secondary_id,
+            #'tertiary_id':   tertiary_id,
+            #'cooldown_tick': cooldown_tick,
+            #'mana_cost':     mana_cost,
         }
-        #print(f"[{session.addr}] [PKT09] Parsed power-cast:")
-        #pprint.pprint(props, indent=4)
+        print(f"[{session.addr}] [PKT09] Parsed power-cast:")
+        pprint.pprint(props, indent=4)
 
         # broadcast to peers
         for other in all_sessions:
@@ -2961,9 +2925,9 @@ def handle_entity_full_update(session, data, all_sessions):
             if bool(br.read_bit()):
                 cue_data['character_name'] = br.read_method_13()
             if bool(br.read_bit()):
-                cue_data['drama_anim'] = br.read_method_13()
+                cue_data['DramaAnim'] = br.read_method_13()
             if bool(br.read_bit()):
-                cue_data['sleep_anim'] = br.read_method_13()
+                cue_data['SleepAnim'] = br.read_method_13()
 
         # Optional summoner
         has_summoner = bool(br.read_bit())
