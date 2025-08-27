@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+    <!-- Enable core dev modes -->
+    <!-- <DEVFLAG_MASTER_CLIENT /> -->  <!-- Local server sim on 127.0.0.1:7498 -->
+    <!-- <DEVFLAG_STANDALONE_CLIENT /> -->  <!-- Offline/single-player | this is still broken  -->
+    <!-- <DEVFLAG_SERVERLOCAL /> -->  <!-- Local connections -->
+    <!-- <DEVFLAG_ADDXMLDEVSETTINGS /> -->  <!-- Already set, but redundant OK -->
+
+
+    <!-- Debug visuals and tools -->
+    <!-- <DEVFLAG_SHOWENTITYCOLLISION /> -->  <!-- Show collision boxes -->
+    <!-- <DEVFLAG_SHOWENTITYGHOST /> -->  <!-- Ghost entities? -->
+    <!-- <DEVFLAG_SHOWPERFORMANCE /> -->  <!-- Perf monitor -->
+    <!-- <DEVFLAG_SHOWRESOURCEMONITOR /> -->  <!-- Resource usage -->
+    <!-- <DEVFLAG_DEVSPAWNENABLED /> -->  <!-- Spawn tools -->
+    <!--  <DEVFLAG_SPAWN_MONSTERS /> -->  <!-- Auto-spawn monsters -->
+    <!-- <DEVFLAG_DUMBMONSTERS /> -->  <!-- Dumb AI for testing -->
+    <!-- <DEVFLAG_SHOWWORLDCOLLISION /> -->  <!-- World collision debug -->
+    <!-- <DEVFLAG_SHOWPOWERRANGE /> -->  <!-- Power ranges -->
+    <!--  <DEVFLAG_SHOWBEHAVIOR /> -->  <!-- Entity behaviors -->
+    <!-- <DEVFLAG_SHOWCUES /> -->  <!-- UI cues -->
+    <!--  <DEVFLAG_PERFORMANCETEST /> -->
+    <!-- <DEVFLAG_OUTLINE_REMOTE_ENTS /> -->
+    <!-- <DEVFLAG_SHOWCHARACTERCREATE /> -->
+
+    <!-- Standalone overrides (from var_5 array; pick a map) -->
+    <!-- <STANDALONEMAPNAME value="LevelsHome.swf/a_Level_Home" /> -->  <!-- Starting map SWF/path -->
+    <!-- <STANDALONEMAPINTERNALNAME value="CraftTown" /> -->  <!-- Internal name -->
+    <!-- <STANDALONEMAPLEVEL value="1" /> -->  <!-- Map level -->
+    <!-- <STANDALONEBASELEVEL value="1" />  -->  <!-- Player base level -->
+    <!-- <STANDALONEPLAYERENTTYPE value="DevPaladin" /> -->  <!-- Player class (e.g., DevPaladin for dev) -->
+    <!-- <STANDALONEMOMENTPARAMS value="" /> -->  <!-- Extra params -->
+    <!-- <STANDALONEALTERPARAMS value="" /> -->  <!-- Alter params -->
+    <!-- <STANDALONEISINSTANCED value="true" /> -->  <!-- Instanced map? -->
+
+    <!-- Other options -->
+    <!-- <VAR_2032 value="127.0.0.1" /> --> <!-- Server IP override -->
+
+    <!-- not sure what the actual purpose is for these -->
+    <!-- <DEVFLAG_NO_GRAPHICS /> -->
+    <!-- <DEVFLAG_NO_PLAYERENT /> -->
+    <!-- <CONST_511 /> -->
+    <!-- <CONST_938 />  -->
+    <!-- <CONST_1124 /> -->
+
+</settings>

@@ -1211,7 +1211,7 @@ def handle_private_message(session, data, all_sessions):
             print(f"[{session.addr}] [PKT46] Recipient {recipient_name} not found")
             err = f"Player {recipient_name} not found".encode("utf-8")
             pl = struct.pack(">H", len(err)) + err
-            session.conn.sendall(struct.pack(">HH", 0x1B, len(pl)) + pl)
+            session.conn.sendall(struct.pack(">HH", 0x44, len(pl)) + pl)
 
     except Exception as e:
         print(f"[{session.addr}] [PKT46] Parse error: {e}, raw payload = {payload.hex()}")
@@ -2640,8 +2640,8 @@ def handle_add_buff(session, data, all_sessions):
             'param6':     param6,
             'vector':     vector if has_vector else None
         }
-        print(f"[{session.addr}] [PKT0B] Parsed add-buff:")
-        pprint.pprint(props, indent=4)
+        #print(f"[{session.addr}] [PKT0B] Parsed add-buff:")
+        #pprint.pprint(props, indent=4)
 
         # 5) Broadcast unchanged packet to peers
         for other in all_sessions:
@@ -2837,8 +2837,8 @@ def handle_power_cast(session, data, all_sessions):
             #'cooldown_tick': cooldown_tick,
             #'mana_cost':     mana_cost,
         }
-        print(f"[{session.addr}] [PKT09] Parsed power-cast:")
-        pprint.pprint(props, indent=4)
+        #print(f"[{session.addr}] [PKT09] Parsed power-cast:")
+        #pprint.pprint(props, indent=4)
 
         # broadcast to peers
         for other in all_sessions:
@@ -3082,7 +3082,7 @@ def handle_entity_incremental_update(session, data, all_sessions):
                     save_characters(session.user_id, session.char_list)
                     break
 
-        print(f"[{session.addr}] [PKT07] Player moved to absolute=({new_x},{new_y}), state={ent_state}")
+        print(f"[{session.addr}] [PKT07] | Entity_ID:{entity_id} | Moved to =({new_x},{new_y}), state={ent_state}")
 
         # 8) Broadcast raw packet to peers
         for other in all_sessions:

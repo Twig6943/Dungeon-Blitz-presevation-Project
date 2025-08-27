@@ -25,7 +25,7 @@ Hints NPCs data
       "Linked_Mission": "NR_Mayor01", 
       "DramaAnim": "",
       "SleepAnim": "",
-      "level": 0,
+      "summonerId": 0,
       "power_id": 0,
       "entState": 0,
       "facing_left": true,
@@ -102,7 +102,6 @@ entState :
 
 """
 
-
 def load_npc_data_for_level(level_name: str) -> list:
     """
     Args:
@@ -118,10 +117,6 @@ def load_npc_data_for_level(level_name: str) -> list:
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error loading NPC data for {level_name}: {e}")
         return []
-
-def scale_coordinates(x: float, y: float, z: float):
-    """Convert floats to integers for method_45."""
-    return int(x), int(y), int(z)
 
 def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
     bb = BitBuffer(debug=True)
@@ -173,12 +168,10 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
     # 4) team
     bb.write_method_6(entity.get('team', 0), Entity.TEAM_BITS)
 
-
-    # ── PLAYER VS NPC BRANCH ──
+    # ── Player OR NPC branch ──
     if entity.get("is_player", False):
         # 5a) Signal “yes, player data follows”
         bb.write_bits(1, 1)
-
 
         # 5b) Write _loc13_ (timing flag for method_1273)
         timing_flag = entity.get("set_timing_flag", False)  # True for new spawns or significant updates
@@ -186,25 +179,18 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
         if bb.debug:
             bb.debug_log.append(f"timing_flag={timing_flag}")
 
-
-
         # 5c) Write _loc14_ (appearance flag for method_1646)
-        appearance_flag = entity.get("show_appearance_effect", False)  # True for new spawns or teleports
+        appearance_flag = entity.get("show_appearance_effect", False)  # True for new player  spawns if the player is already in the level then it is False
         bb.write_bits(1 if appearance_flag else 0, 1)
         if bb.debug:
             bb.debug_log.append(f"appearance_flag={appearance_flag}")
 
         #the actual purpose of these 4 lines  are currently unknown but the client reads the data properly
         # ====================================
-        # Pet ID
         bb.write_method_6(entity.get("PetTypeID", 0), class_7.const_19)
-
         bb.write_method_6(entity.get("PetLevel", 0), class_7.const_75)
-
         bb.write_method_6(entity.get("MountID", 0), class_20.const_297)
-
         bb.write_method_6(entity.get("Emote_ID", 0), class_3.const_69)
-
         # ====================================
 
         abilities = entity.get("abilities", [])
@@ -229,6 +215,7 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
 
         bb.write_method_739(entity.get("render_depth_offset", 0))
 
+        # used to set the current entity's moving speed if he has any
         speed = entity.get("behavior_speed", 0)
         if speed > 0:
             bb.write_bits(1, 1)
@@ -242,7 +229,7 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
         if val:
             bb.write_method_13(val)
 
-    # 7)  Entity Level
+    # links this entity to the summoners ID
     summoner_id = entity.get("summonerId", 0)
     if summoner_id:
         bb.write_bits(1, 1)
@@ -273,7 +260,7 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
     if entity.get('is_player', False):
 
 
-        # 5e) Player level and Currently unknown
+        # 5e) Player level and Talent processing loop
         level = entity.get("PlayerLevel", 0)
         bb.write_method_6(level, Entity.MAX_CHAR_LEVEL_BITS)
         if bb.debug:
@@ -288,7 +275,8 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
         bb.write_bits( 0, 1)
 
         #TODO...
-        #this will crash the game not sure why the game seems to read the bitstream properly
+        # this will crash the game not sure why the game seems to read the bitstream properly
+        # after this is fixed the bitstream should be fully in sync with the client
         """ 
         # 5f) Talent Nodes / Upgrades
         talents = entity.get("talents", [])
@@ -314,11 +302,13 @@ def Send_Entity_Data(entity: Dict[str, Any]) -> bytes:
 
 
     # 11) HP delta
+    # updates the entity's Health if that specific entity has lost any amount of health
     value = int(round(entity.get("health_delta", 0)))
     bb.write_signed_method_45(value)
 
 
     # 12) buffs
+    # Updates the entities buffs if he has any
     buffs = entity.get("buffs", [])
     bb.write_method_4(len(buffs))
     for buff in buffs:

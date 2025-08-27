@@ -3,20 +3,10 @@ import json
 import os
 from typing import Optional, Dict
 
-FRAMEBITS_TO_CLASSKEY = {
-        533: "executioner",
-        545: "shadowwalker",
-        437: "soulthief",
-        442: "sentinel",
-        415: "justicar",
-        472: "templar",
-        479: "frostwarden",
-        491: "flameseer",
-        550: "necromancer",
-    }
+PACKET_HEADER_SIZE = 4
 
-def method_233(frame_bits: int) -> str:
-    return FRAMEBITS_TO_CLASSKEY.get(frame_bits, "")
+
+
 
 NUM_TALENT_SLOTS = 27
 CONST_529 = [5,2,3,5,5,3,2,3,2,5,2,3,5,5,3,2,3,2,5,2,3,5,5,3,2,3,2]
@@ -46,6 +36,22 @@ class_7_const_75 = 6
 GEARTYPE_BITS = 11
 Entity_const_172_bits = 3
 SLOT_BIT_WIDTHS = []
+
+FRAMEBITS_TO_CLASSKEY = {
+        533: "executioner",
+        545: "shadowwalker",
+        437: "soulthief",
+        442: "sentinel",
+        415: "justicar",
+        472: "templar",
+        479: "frostwarden",
+        491: "flameseer",
+        550: "necromancer",
+    }
+
+def method_233(frame_bits: int) -> str:
+    return FRAMEBITS_TO_CLASSKEY.get(frame_bits, "")
+
 
 MASTERCLASS_TO_BUILDING = {
     # Rogue

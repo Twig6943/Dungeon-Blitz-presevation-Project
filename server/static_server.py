@@ -1,7 +1,6 @@
 # static_server.py
 import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-
 def start_static_server(
     host: str = "127.0.0.1",
     port: int = 80,

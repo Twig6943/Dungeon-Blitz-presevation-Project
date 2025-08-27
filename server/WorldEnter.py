@@ -28,7 +28,6 @@ from constants import (
     NUM_TALENT_SLOTS,
     GEARTYPE_BITS,
     class_119, class_111, class_9, class_66, MASTERCLASS_TO_BUILDING, class_21, Game, Mission, Entity,
-
 )
 from missions import get_total_mission_defs, get_mission_def
 
@@ -37,7 +36,6 @@ CLASS_BUILD_ORDER = {
     "mage":    [2, 12, 6, 7, 8, 1, 13],
     "rogue":   [2, 12, 9, 10,11, 1, 13],
 }
-
 def Player_Data_Packet(char: dict,
                        event_index: int = 5,
                        transfer_token: int = 0,
@@ -48,9 +46,6 @@ def Player_Data_Packet(char: dict,
                        new_y: int = None,
                        new_has_coord: bool = True,
                        send_extended: bool = False) -> bytes:
-                       #send_extended = True) -> bytes:
-
-
     buf = BitBuffer()
 
     # ──────────────(Preamble)──────────────
@@ -599,14 +594,11 @@ def Player_Data_Packet(char: dict,
 
        # client automatically adds your own entry at the end
 
-
     payload = buf.to_bytes()
     return struct.pack(">HH", 0x10, len(payload)) + payload
 
-
 #TODO... all this does is just update the building visuals when the player join the game from a saved account nothing important
 # it should be send as a response on (0x1f) packet when joining "CraftTown" level
-
 def send_building_update(session, char):
     mf_stats = char.get("magicForge", {}).get("stats_by_building", {})
 
@@ -636,8 +628,6 @@ def send_building_update(session, char):
     pkt = struct.pack(">HH", 0xDA, len(buf.to_bytes())) + buf.to_bytes()
     session.conn.sendall(pkt)
 
-
-
 def build_enter_world_packet(
     transfer_token: int,
     old_level_id: int,
@@ -653,7 +643,7 @@ def build_enter_world_packet(
     new_internal: str,
     new_moment: str,
     new_alter: str,
-    new_is_inst: bool,
+    new_is_dungeon: bool,
     new_has_coord: bool = False,
     new_x: int = 0,
     new_y: int = 0,
@@ -694,8 +684,8 @@ def build_enter_world_packet(
     buf.write_utf_string(new_moment)
     buf.write_utf_string(new_alter)
 
-    # 10) new_is_instanced flag (_loc17_)
-    buf._append_bits(1 if new_is_inst else 0, 1)
+    # 10) new_is_dungeonanced flag (_loc17_)
+    buf._append_bits(1 if new_is_dungeon else 0, 1)
 
     # 11) spawn-point flag (_loc18_) + coords (_loc20_, _loc21_)
     buf._append_bits(1 if new_has_coord else 0, 1)

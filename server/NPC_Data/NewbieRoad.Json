@@ -48,7 +48,7 @@
       "is_player": false
     },
     {
-      "id": 3,
+      "id": 591,
       "name": "NPCElric",
       "x": 2919,
       "y": 599,
@@ -58,17 +58,17 @@
       "untargetable": false,
       "render_depth_offset": -30,
       "behavior_speed": 0.0,
-      "Linked_Mission": "Ehric NPC is supposed to be here",
+      "Linked_Mission": "",
       "DramaAnim": "",
       "SleepAnim": "",
-      "summonerId": 2,
-      "power_id": 2,
+      "summonerId": 0,
+      "power_id": 0,
       "facing_left": true,
-      "health_delta": 1,
+      "health_delta": 0,
       "buffs": [],
-      "max_hp": 100,
-      "mount_id": 1,
-      "buff_icon": 1,
+      "max_hp": 0,
+      "mount_id": 0,
+      "buff_icon": 0,
       "is_player": false
     },
     {

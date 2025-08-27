@@ -20,8 +20,6 @@ def set_active_session_resolver(fn):
     global active_session_resolver
     active_session_resolver = fn
 
-
-
 class TaskScheduler:
     def __init__(self):
         self._lock = threading.Lock()
