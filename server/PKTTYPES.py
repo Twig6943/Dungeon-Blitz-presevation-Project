@@ -1,233 +1,232 @@
-const_1192 = 0xe1
-const_1397 = 0x70
-const_1395 = 0xfe
-const_1137 = 0xc1
-const_901 = 0x98
-const_791 = 0xb7
-const_1262 = 0xf0
-const_1134 = 0x37
-PKTTYPE_LOGIN_VERSION = 0x11
-PKTTYPE_TRANSFER_BEGIN = 0x1c
-PKTTYPE_ENT_POWER_HIT = 0xa
-const_966 = 0xbf
-const_1197 = 0xf3
-PKTTYPE_LOGIN_CREATE = 0x13
-const_1020 = 0x6a
-const_1377 = 0x5e
-const_1321 = 0x22
-PKTTYPE_QUERYMESSAGE_ANSWER = 0x59
-PKTTYPE_LOGIN_CHARACTER_SELECT = 0x16
-PKTTYPE_LEVEL_STATE = 0x40
-const_1077 = 0xbe
-PKTTYPE_QUERYMESSAGE_INTERPRET = 0x5a
-const_1266 = 0x104
-PKTTYPE_GRANT_REWARD = 0x2a
-const_849 = 0xe4
-const_1263 = 0x1a
-PKTTYPE_GAME_TO_LOGIN_MAP_CLOSED = 0x29
-PKTTYPE_LOGIN_AUTHENTICATE = 0x14
-const_1378 = 0xfd
-const_1023 = 0x10f
-const_905 = 0x3c
-const_1142 = 0xf7
-const_909 = 0x10e
-const_1329 = 0x72
-const_1306 = 0x74
-const_969 = 0xfc
-const_913 = 0xc9
-const_1201 = 0x10c
-const_1081 = 0xef
-PKTTYPE_FRIEND_REMOVED = 0x93
-const_1271 = 0x3b
-const_1272 = 0x113
-const_1273 = 0xd0
-PKTTYPE_PICKUP_LOOTDROP = 0x38
-const_1028 = 0xb5
-const_1027 = 0xe3
-PKTTYPE_BUFF_TICK_DOT = 0x79
-PKTTYPE_ENT_POWER_CAST = 0x9
-const_709 = 0xb2
-PKTTYPE_TRANSFER_READY = 0x1d
-const_1276 = 0x6b
-const_975 = 0xfa
-PKTTYPE_UPDATE_EQUIPMENT = 0x30
-const_861 = 0xd7
-const_1089 = 0xd2
-const_1031 = 0x89
+const_1262 = 0xF0 # PKTTYPE_PET_HATCH_OR_TRAIN
+const_1134 = 0x37 # PKTTYPE_RECEIVE_NEW_PET
+const_1197 = 0xF3 # PKTTYPE_REQUEST_VISIT_PLAYER_HOUSE
+const_1020 = 0x6A # PKTTYPE_REQUEST_JOIN_PARTY
+const_1266 = 0x104 # PKTTYPE_UPDATE_LOCKBOX_INVENTORY
+const_849 = 0xe4 # PKTTYPE_REQUEST_EGG_UPDATE
+const_1023 = 0x10f # PKTTYPE_SPEND_ROYAL_SIGILS
+const_1142 = 0xf7 # PKTTYPE_RECALC_HEALTH
+const_909 = 0x10e # PKTTYPE_QUEUE_POTION
+const_969 = 0xfc # PKTTYPE_SEND_COMBAT_STATS
+const_1081 = 0xef # PKTTYPE_PET_TRAINING_COMPLETE
+const_1271 = 0x3b # PKTTYPE_ENTITY_HEAL
+const_975 = 0xfa # PKTTYPE_UPDATE_CYCLE
+const_1089 = 0xd2 # PKTTYPE_RESPEC_TALENT_TREE
+PKTTYPE_CLIENT_ERROR = 0x7c # client crash Reports
+const_1201 = 0x10c  # updates players consumables inventory when a  consumable is used
+const_1028 = 0xb5  # updates players MammothIdols
+const_1031 = 0x89 # PKTTYPE_UPDATE_BONUS_LEVELS
+const_805 = 0xAC # PKTTYPE_ROOM_BOSS_INFO
+const_1280 = 0xF5 # PKTTYPE_LEVEL_GEAR_LIST
+const_683 = 0xA5 # PKTTYPE_ROOM_EVENT_START
+const_694 = 0xC2 # PKTTYPE_FLAMETHROWER_ROR_TRIGGER
+const_808 = 0xA7 # PKTTYPE_EMOTE
+const_1157 = 0xA1 # PKTTYPE_PREMIUM_CURRENCY_UPDATE
+const_1208 = 0xC4 # PKTTYPE_SESSION_STATS
+const_648 = 0xA9 # PKTTYPE_ROOM_STATE_UPDATE
+const_924 = 0xA4 # PKTTYPE_HEARTBEAT
+const_981 = 0xE5 # PKTTYPE_EGG_PET_UPDATE
+const_707 = 0x69 # PKTTYPE_LOCK/UNLOCK Command
+const_1037 = 0xF9 # PKTTYPE_REQUEST_CLIENT_HP
+const_1099 = 0xF6 # PKTTYPE_CLIENT_HP_REPORT
+const_1158 = 0xDA # PKTTYPE_ROOM_SCAFFOLDING_UPDATE
+const_928 = 0xF1 # PKTTYPE_PLAYER_EQUIPMENT_UPDATE
+const_1161 = 0x8D # PKTTYPE_BADGE_INTERACT
+const_1211 = 0x10A # PKTTYPE_DYE_UNLOCK - Grants/unlocks a dye/color for the player
+const_716 = 0xa8  # PKTTYPE_PLAY_SOUND - Plays a sound in the client's current room
+const_1036 = 0xed  # PKTTYPE_CANCEL_PET_TRAINING - Cancels the pet training process
+const_990 = 0x86  # PKTTYPE_COMPLETE_MISSION - Marks a mission as complete
+const_691 = 0xae  # PKTTYPE_SET_UNTARGETABLE
+const_1104 = 0xf2  # PKTTYPE_PET_EXPERIENCE_UPDATE
+const_1219 = 0x106  # PKTTYPE_BUY_ROYAL_SIGIL_STORE
+const_1214 = 0x101  # PKTTYPE_SERVER_MAINT_WARNING
+const_762 = 0xa6  # PKTTYPE_ROOM_CLOSE / ROOM_RESET
+const_1295 = 0x103  # PKTTYPE_NEWS_UPDATE
+const_874 = 0x8b  # PKTTYPE_SEND_MAP_POSITION
+const_823 = 0xad  # PKTTYPE_ROOM_UNLOCK - Notifies client that a room is now unlocked or accessible
+const_877 = 0xe8  # PKTTYPE_EGG_HATCH_CANCEL - Sent by the client to cancel an egg hatching process
+const_939 = 0xe7  # PKTTYPE_EGG_HATCH_START - Sent by the server to notify the client that a new pet egg has started hatching
+const_1300 = 0xcb  # PKTTYPE_POWER_USE_START - Sent by the client to the server when a player begins using a power that consumes mana
+const_1114 = 0xec  # PKTTYPE_PET_TRAIN_START - Sent by the client to start training a pet
+const_1115 = 0x105  # PKTTYPE_BUY_LOCKBOX_KEYS - Client requests to buy Lockbox/Dragon keys
+const_1171 = 0xa3  # PKTTYPE_ACTIVE_FIRE_HEARTBEAT - Sent periodically while player is firing/using abilities
+const_617 = 0xaa  # PKTTYPE_ACTION_UPDATE - Server notifies client of a player action/input (jump, fire, drop, etc.) in a room
+const_1105 = 0xcf  # PKTTYPE_MAGIC_FORGE_REROLL - Client requests the server to reroll the currently crafting Magic Forge item
+const_1001 = 0xff  # PKTTYPE_NEW_HATCHERY_EGGS - Server notifies the client that new eggs are ready in the Hatchery
+const_1235 = 0xb4  # PKTTYPE_MONEY_LOSS - Server notifies client that the player lost gold
+const_996 = 0xf4  # PKTTYPE_ZONE_ENTER - Client notifies server that the player has entered a new zone/room
+const_1061 = 0xaf  # PKTTYPE_ENT_GEAR_UPDATE - Updates an entity's equipped gear (armor, weapons, accessories) on the client
+const_1239 = 0xcc  # PKTTYPE_HOTBAR_ABILITY_SWITCH - Client notifies the server that the player switched active abilities; payload is empty, server infers new state from current hotbar.
+const_947 = 0xe6  # PKTTYPE_BARN_HATCH_OR_TRAIN - Client sends this when the player clicks to hatch a new egg or train a pet; payload includes egg ID/type for hatching, boolean flag for action type.
+const_1182 = 0x109  # PKTTYPE_GAIN_CHARM - Server notifies the client that the player gained a charm or respec stone; payload includes encoded charm ID and quantity/flags.
+const_1126 = 0x88  # PKTTYPE_SET_ENTITY_LEVELS - Server notifies the client of the new level for entities; client updates maxHP and related stats for all entities accordingly.
+const_1010 = 0x34  # PKTTYPE_MATERIAL_PICKUP - Server notifies the client that the player has acquired materials; client updates inventory and optionally shows a notification.
+const_1127 = 0xbb  # PKTTYPE_REPORT_MAX_HP_CHANGE - Client informs the server that the player's maximum HP has changed, so the server can adjust stats or apply over-heal corrections.
+const_1303 = 0x10b  # PKTTYPE_CONSUMABLE_GAIN - Server notifies the client that the player has obtained consumable items; includes item ID, stack count, and whether to suppress pickup notification.
+const_1164 = 0x114  # PKTTYPE_LOCKBOX_OPEN - Client request sent to server when the player attempts to open a lockbox; includes lockbox ID and selected option index.
+const_956 = 0x36  # PKTTYPE_GAIN_MOUNT - Server notifies client that the player has obtained a new mount; includes mount ID and a flag for whether to suppress notification.
+const_1014 = 0xbc  # PKTTYPE_SAVE_KEYBINDS - Client sends updated keybinding configuration to the server; payload includes whether defaults are used and all custom keybind mappings.
+const_958 = 0x100  # PKTTYPE_CHAR_REGEN - Server packet sent when a character regenerates health; includes entity ID and amount of HP restored.
+const_788 = 0xAB  # PKTTYPE_ROOM_INFO_UPDATE - Updates room state: player count, room name, capacity, and owner name.
+const_1190 = 0xE9  # PKTTYPE_PET_EGG_SPEEDUP - Client requests to accelerate egg hatching using Mammoth Idols (consumes idols based on remaining hatch time).
+const_898 = 0x112  # PKTTYPE_ROYAL_SIGIL_REWARD - Server grants the player Royal Sigils (lockbox currency); updates total and caches amount earned.
+const_897 = 0xb6  # PKTTYPE_MAX_CHARACTERS - Server tells client the maximum number of characters (login slots) the account is allowed.
+const_1255 = 0xfb  # PKTTYPE_SYNC_PLAYER_STATS - Server requests the client to resend its current melee, magic, and max HP stats; used to synchronize player stats between client and server.
+const_962 = 0xee  # PKTTYPE_PET_TRAINING_COMPLETE - Notifies the client that a pet has finished training; triggers a notification and updates pet training status.
+const_252 = 0x10d  # PKTTYPE_QUEUE_POTION - Notifies the client that a potion/consumable has been queued for use by a specific entity; triggers updating the next active potion.
+
+
+#===================================
+PKTTYPE_MISSION_ADDED = 0x85
+PKTTYPE_MISSION_COMPLETE = 0x84
 PKTTYPE_RECEIVE_GOLD = 0x35
-const_1032 = 0xdb
-const_805 = 0xac
-const_1090 = 0xa2
-PKTTYPE_REQUEST_RESPAWN = 0x77
-const_976 = 0xc8
-PKTTYPE_LOGIN_CHARACTER_LIST = 0x15
-const_920 = 0xd5
-const_1153 = 0xcd
-const_1347 = 0x73
-PKTTYPE_LOGIN_TO_GAME_KICK_USER = 0x45
-const_1280 = 0xf5
-const_1205 = 0xd1
-const_683 = 0xa5
-PKTTYPE_RECV_LEVEL_COMPLETE = 0x87
-PKTTYPE_LOGIN_TO_GAME_LOAD_LEVEL = 0x20
-PKTTYPE_CLIENT_ERROR = 0x7c
-const_694 = 0xc2
-PKTTYPE_LOGIN_TO_GAME_NOTIFY_ONLINE = 0x5b
-const_1348 = 0xa0
-const_1152 = 0x8e
-const_1039 = 0x43
-const_1029 = 0x31
-const_808 = 0xa7
-const_1368 = 0x94
-const_1157 = 0xa1
-const_1369 = 0xeb
-PKTTYPE_LOGIN_CHALLENGE = 0x12
-const_1208 = 0xc4
-const_648 = 0xa9
-PKTTYPE_RECEIVE_REWARD = 0x2b
-const_1284 = 0xe0
-const_924 = 0xa4
-PKTTYPE_GAMESERVER_LOGIN = 0x1f
-const_987 = 0xd6
-PKTTYPE_LOGIN_TO_GAME_NOTIFY_OFFLINE = 0x5c
-const_981 = 0xe5
-PKTTYPE_ENT_DESTROY = 0xd
-const_707 = 0x69
-const_1289 = 0x107
-const_1037 = 0xf9
-const_1158 = 0xda
-const_1041 = 0x111
-const_928 = 0xf1
-PKTTYPE_RELAY_PACKET_PROCESS = 0x4b
-PKTTYPE_CHANGE_LEVEL = 0x39
-const_760 = 0x8a
-const_1161 = 0x8d
-PKTTYPE_OPEN_DOOR = 0x2d
-const_1211 = 0x10a
-const_716 = 0xa8
-const_1353 = 0xb8
-const_1036 = 0xed
-const_1209 = 0xb3
-const_1044 = 0xd4
-const_990 = 0x86
-PKTTYPE_TALK_TO_NPC = 0x7a
-const_691 = 0xae
-const_1104 = 0xf2
-const_1047 = 0xd3
-const_1219 = 0x106
-const_1214 = 0x101
-const_762 = 0xa6
-const_1295 = 0x103
-const_1099 = 0xf6
-const_929 = 0xbd
-const_933 = 0x18
-PKTTYPE_PROJECTILE_EXPLODE = 0xe
-const_874 = 0x8b
-const_1220 = 0xdf
-const_1165 = 0x9d
-PKTTYPE_DOOR_STATE = 0x42
-const_1298 = 0x92
-PKTTYPE_CHAR_REGEN = 0x78
-const_610 = 0x91
-PKTTYPE_WELCOME = 0x10
-const_876 = 0x8c
-const_823 = 0xad
-PKTTYPE_GAME_TO_LOGIN_USER_JOINED = 0x27
-PKTTYPE_RESPAWN_COMPLETE = 0x80
-const_878 = 0xd9
-const_767 = 0xc3
-PKTTYPE_ENT_REMOVE_BUFF = 0xc
-const_877 = 0xe8
-const_939 = 0xe7
-PKTTYPE_REQUEST_DOOR_STATE = 0x41
-const_1300 = 0xcb
-PKTTYPE_GAME_TO_LOGIN_USER_LEFT = 0x28
-const_1052 = 0x9e
-const_879 = 0x97
-PKTTYPE_LOGIN_CHARACTER_CREATE = 0x17
-const_1175 = 0xba
-PKTTYPE_MISSION_PROGRESS = 0x83
-const_937 = 0xb1
-const_1302 = 0x95
-const_1112 = 0x9b
-const_1114 = 0xec
-const_941 = 0x8f
-const_1337 = 0x71
-const_978 = 0xea
-const_1229 = 0x9c
+PKTTYPE_FRIEND_REMOVED = 0x93
+PKTTYPE_PICKUP_LOOTDROP = 0x38
+PKTTYPE_QUERYMESSAGE_ANSWER = 0x59
+PKTTYPE_LEVEL_STATE = 0x40
+PKTTYPE_QUERYMESSAGE_INTERPRET = 0x5a
+PKTTYPE_SERVER_ADJUST_HP = 0x3a
 PKTTYPE_SET_LEVEL_COMPLETE = 0x3f
 PKTTYPE_RECEIVE_GEAR = 0x33
-const_773 = 0xb0
-const_1111 = 0xde
-PKTTYPE_NEWLY_RELEVANT_ENTITY = 0xf
-const_1115 = 0x105
-const_1171 = 0xa3
-const_617 = 0xaa
-PKTTYPE_SERVER_ADJUST_HP = 0x3a
-const_1358 = 0xb9
-const_451 = 0xc5
-const_616 = 0x90
-PKTTYPE_ENT_INCREMENTAL_UPDATE = 0x7
-const_1105 = 0xcf
-PKTTYPE_ENT_FULL_UPDATE = 0x8
-const_1001 = 0xff
-const_1178 = 0xca
-const_1235 = 0xb4
-const_996 = 0xf4
-const_945 = 0x21
-const_1183 = 0x48
-const_1061 = 0xaf
-PKTTYPE_RECEIVE_LOOTDROP = 0x32
-const_1415 = 0xce
-const_889 = 0xe2
-PKTTYPE_RELAY_TO_CHARID = 0x49
-const_1239 = 0xcc
-const_947 = 0xe6
-PKTTYPE_MISSION_ADDED = 0x85
-PKTTYPE_RELAY_PACKET_SENDTOCLIENT = 0x4c
-PKTTYPE_LOGIN_FAILURE = 0x1b
-const_1182 = 0x109
-const_884 = 0x108
-const_1065 = 0x7b
-PKTTYPE_MISSION_COMPLETE = 0x84
-const_893 = 0xc6
-const_1126 = 0x88
-const_839 = 0x81
-const_838 = 0xd8
-const_840 = 0x19
-const_1008 = 0x9a
-const_1010 = 0x34
-PKTTYPE_CHANGE_OFFSET_Y = 0x7d
-const_1127 = 0xbb
-const_1129 = 0xdd
-const_1187 = 0xdc
-const_1241 = 0x9f
-const_894 = 0x3e
-const_1303 = 0x10b
-PKTTYPE_RELAY_TO_CHARNAME = 0x4a
-const_1164 = 0x114
-const_956 = 0x36
-const_1014 = 0xbc
-PKTTYPE_GAME_TO_LOGIN_READY = 0x26
-PKTTYPE_DOOR_TARGET = 0x2e
-const_958 = 0x100
-const_788 = 0xab
-const_789 = 0x110
-const_843 = 0xc7
-const_743 = 0x82
-const_1190 = 0xe9
-const_898 = 0x112
-const_1133 = 0xc0
-const_897 = 0xb6
-const_900 = 0xf8
-PKTTYPE_ENT_ADD_BUFF = 0xb
-PKTTYPE_GAME_TO_LOGIN_USER_TRANSFER = 0x2f
-const_1255 = 0xfb
-const_1256 = 0x96
-const_962 = 0xee
-const_252 = 0x10d
-const_1260 = 0x99
+PKTTYPE_MISSION_PROGRESS = 0x83
+PKTTYPE_CHANGE_LEVEL = 0x39
+PKTTYPE_RECEIVE_REWARD = 0x2b
+PKTTYPE_RECV_LEVEL_COMPLETE = 0x87
 
+# Buildings Upgrade packets
+#===================================
+const_1032 = 0xdb
+const_1187 = 0xdc
+const_861 = 0xd7
+const_838 = 0xd8
+const_1027 = 0xe3
+#===================================
+
+# Master class related packets
+#===================================
+const_767 = 0xc3
+const_1137 = 0xc1
+#===================================
+
+# LockBox related packets
+#===================================
+const_1289 = 0x107
+const_884 = 0x108
+#===================================
+
+# Talent Upgrade related packets
+#===================================
+const_987 = 0xd6
+const_1284 = 0xe0
+const_1044 = 0xd4
+const_1220 = 0xdf
+const_1047 = 0xd3
+const_878 = 0xd9
+const_920 = 0xd5
+#===================================
+
+# Forge related packets
+#===================================
+const_889 = 0xe2
+const_1273 = 0xd0
+const_937 = 0xb1
+const_1192 = 0xe1
+const_789 = 0x110
+const_1153 = 0xcd
+#===================================
+
+# Gear Related packets
+#===================================
+const_773 = 0xb0
+const_1029 = 0x31
+PKTTYPE_UPDATE_EQUIPMENT = 0x30
+#===================================
+
+# Gear Set Related Packets
+#===================================
+const_976 = 0xc8
+const_843 = 0xc7
+const_893 = 0xc6
+#===================================
+
+# Barn and pets related packets
+#===================================
+const_709 = 0xb2
+const_1209 = 0xb3
+const_978 = 0xea
+#===================================
+
+# Entity Visuals related packets
+#===================================
+const_1152 = 0x8e
+const_1175 = 0xba
+const_941 = 0x8f
+const_1041 = 0x111
+#===================================
+
+# Skill Related packets
+#===================================
+const_929 = 0xbd
+const_1077 = 0xbe
+const_1205 = 0xd1
+const_1129 = 0xdd
+const_1111 = 0xde
+const_966 = 0xbf
+const_1133 = 0xc0
+#===================================
+
+# Combat Related packets
+#===================================
+PKTTYPE_ENT_DESTROY = 0xd
+PKTTYPE_BUFF_TICK_DOT = 0x79
+const_743 = 0x82
+PKTTYPE_REQUEST_RESPAWN = 0x77
+PKTTYPE_GRANT_REWARD = 0x2a
+PKTTYPE_ENT_POWER_HIT = 0xa
+PKTTYPE_PROJECTILE_EXPLODE = 0xe
+PKTTYPE_ENT_ADD_BUFF = 0xb
+PKTTYPE_ENT_REMOVE_BUFF = 0xc
+const_760 = 0x8a
+PKTTYPE_RECEIVE_LOOTDROP = 0x32
+PKTTYPE_RESPAWN_COMPLETE = 0x80
+PKTTYPE_CHAR_REGEN = 0x78
+#===================================
+
+#Entity Update Related packets
+#===================================
+PKTTYPE_CHANGE_OFFSET_Y = 0x7d
+PKTTYPE_ENT_INCREMENTAL_UPDATE = 0x7
+const_1090 = 0xa2
+PKTTYPE_ENT_POWER_CAST = 0x9
+PKTTYPE_ENT_FULL_UPDATE = 0x8
+PKTTYPE_NEWLY_RELEVANT_ENTITY = 0xf
+#===================================
+
+# Login Screen
+#===================================
+PKTTYPE_LOGIN_VERSION = 0x11
+PKTTYPE_LOGIN_CHALLENGE = 0x12
+PKTTYPE_LOGIN_CREATE = 0x13
+PKTTYPE_LOGIN_CHARACTER_LIST = 0x15
+PKTTYPE_LOGIN_AUTHENTICATE = 0x14
+PKTTYPE_LOGIN_CHARACTER_SELECT = 0x16
+PKTTYPE_LOGIN_CHARACTER_CREATE = 0x17
+PKTTYPE_LOGIN_FAILURE = 0x1b
+const_1263 = 0x1a
+const_840 = 0x19
+#===================================
+
+# Enter Game world / level transfer
+#===================================
+const_945 = 0x21
+PKTTYPE_WELCOME = 0x10
+PKTTYPE_GAMESERVER_LOGIN = 0x1f
+PKTTYPE_TRANSFER_READY = 0x1d
+PKTTYPE_OPEN_DOOR = 0x2d
+PKTTYPE_DOOR_TARGET = 0x2e
+PKTTYPE_REQUEST_DOOR_STATE = 0x41
+PKTTYPE_DOOR_STATE = 0x42
+#===================================
 
 #StandAlone and Developer mode Related
 #===================================
@@ -235,11 +234,20 @@ PKTTYPE_GAME_TO_MASTER_END_LEVEL = 0x25
 PKTTYPE_MASTER_CLIENT = 0x1e
 PKTTYPE_GAME_TO_MASTER_START_LEVEL = 0x24
 PKTTYPE_GAME_TO_MASTER_PORT = 0x23
+const_894 = 0x3e  # PKTTYPE_TRADE_MODE_ENABLE - Server notifies the client that transfer/trade mode has been enabled
+
 #===================================
 
-
-# Chat related PKTTYPES
+# Social Related PKTTYPES
 #===================================
+const_1256 = 0x96  # PKTTYPE_ZONE_PLAYERS_UPDATE - Server sends the client the list of players currently in the same zone/area; client updates the Zone panel with this information.
+const_791 = 0xB7 # PKTTYPE_QUEST_PROGRESS_UPDATE
+const_905 = 0x3C # PKTTYPE_START_SKIT
+const_913 = 0xc9 # PKTTYPE_REQUEST_FRIEND_LIST
+const_1276 = 0x6b # PKTTYPE_TELEPORT_TO_PLAYER
+const_1165 = 0x9d  # PKTTYPE_PLAYER_IGNORE_RECEIVE - received by the server when the player has been ignored
+const_1298 = 0x92  # PKTTYPE_FRIEND_UPDATE - Sent by the server when a friend’s status changes (online/offline, friend request, accepted, etc.)
+const_610 = 0x91 # PKTTYPES_UNFRIEND - client sends request to remove player from the friend list
 const_1141 = 0x3d # Gray chat text
 const_985 = 0x102 # Admin chat Announcement # yellow color
 PKTTYPE_CHAT_MESSAGE = 0x2c
@@ -249,11 +257,29 @@ PKTTYPE_CHAT_STATUS = 0x44 # Gray chat text
 PKTTYPE_SEND_CHAT_OFFICER = 0x61
 PKTTYPE_SEND_CHAT_PRIVATE = 0x46
 PKTTYPE_RECV_CHAT_OFFICER = 0x62
+const_451 = 0xc5
+const_1272 = 0x113 # Alert State update
+PKTTYPE_TALK_TO_NPC = 0x7a
+PKTTYPE_QUERYMESSAGE_QUESTION = 0x58
+const_839 = 0x81  # PKTTYPE_STATUS_TEXT_UNSAFE - Server sends a raw/unfiltered status message to the client (possibly containing unsafe or special formatting); displayed directly in the chat window.
+const_1241 = 0x9f  # PKTTYPE_IGNORE_LIST_UPDATE - Server sends the client the current list of ignored players, which the client then displays in the ignore panel.
+const_1183 = 0x48  # PKTTYPE_SEND_WHISPER - Server notifies client of a private message (whisper) from another player
+const_1178 = 0xca  # PKTTYPE_FRIENDLIST_UPDATE - Server sends the full friend list and updates friend statuses
+const_616 = 0x90 # PKTTYPES_SEND_FRIEND_REQUEST
+const_1302 = 0x95  # PKTTYPE_ZONE_PANEL_REQUEST - Client requests the current players in the same zone/area
+const_879 = 0x97  # PKTTYPE_GUILD_MEMBER_ONLINE - Sent by the server when a guild member logs in to notify the client
+const_1052 = 0x9e  # PKTTYPE_IGNORE_LIST_REQUEST - Sent by the client to request the current list of ignored players from the server
+const_876 = 0x8c  # PKTTYPE_PARTY_UPDATE (likely)
+#   - Sent by the server when a party member’s info is updated, such as:
+#       - Player accepts a party invite
+const_1039 = 0x43 # PKTTYPE_CHAT_IGNORE - sends a request to the server to ignore a player
+const_1065 = 0x7b  # PKTTYPE_INTERACT_SKIT - Server tells the client that an entity should start a skit/dialogue; payload contains entity ID and optional skit ID to play.
 #===================================
-
 
 # Guild  related PKTTYPES
 #===================================
+const_1260 = 0x99  # PKTTYPE_GUILD_RANK_CHANGE - Notifies the client of a guild member's promotion, demotion, or leadership change; updates rank display and chat notifications.
+const_1112 = 0x9b  # PKTTYPE_GUILD_MEMBER_LEFT - Notifies the client when a guild member leaves or is kicked
 PKTTYPE_CMD_GUILD_DEMOTE = 0x52
 PKTTYPE_CMD_GUILD_QUIT = 0x54
 PKTTYPE_GUILD_UPDATE = 0x56
@@ -268,9 +294,10 @@ PKTTYPE_GUILD_REFRESH_MEMBERSHIP = 0x57
 PKTTYPE_CMD_GUILD_PROMOTE = 0x51
 PKTTYPE_SEND_CHAT_GUILD = 0x5f
 PKTTYPE_ONLINE_USER_GUILD_STATUS = 0x5d
-PKTTYPE_QUERYMESSAGE_QUESTION = 0x58
+const_901 = 0x98 # PKTTYPE_FRIEND_LOGGED_OFF
+const_1008 = 0x9a  # PKTTYPE_GUILD_MEMBER_JOINED - Server notifies the client that a new player has joined the guild; client updates the guild member list and shows a chat notification.
+const_1229 = 0x9c  # PKTTYPE_IGNORE_REMOVE - Server confirms a player has been removed from your ignore list
 #===================================
-
 
 # party related PKTTYPES
 #===================================
@@ -287,9 +314,44 @@ PKTTYPE_CMD_GROUP_LEAVE = 0x66
 PKTTYPE_RECV_CHAT_GROUP = 0x64
 #===================================
 
-
 #Emotes related PKTTYPES
 #===================================
 PKTTYPE_EMOTE_BEGIN = 0x7e
 PKTTYPE_EMOTE_END = 0x7f
+#===================================
+
+# These packet type constants are declared in LinkUpdater.as
+# but never referenced elsewhere in the client.
+#===================================
+PKTTYPE_TRANSFER_BEGIN = 0x1c
+PKTTYPE_GAME_TO_LOGIN_USER_TRANSFER = 0x2f
+PKTTYPE_GAME_TO_LOGIN_READY = 0x26
+PKTTYPE_RELAY_TO_CHARNAME = 0x4a
+PKTTYPE_RELAY_PACKET_SENDTOCLIENT = 0x4c
+PKTTYPE_RELAY_TO_CHARID = 0x49
+PKTTYPE_GAME_TO_LOGIN_USER_LEFT = 0x28
+PKTTYPE_GAME_TO_LOGIN_USER_JOINED = 0x27
+PKTTYPE_RELAY_PACKET_PROCESS = 0x4b
+PKTTYPE_LOGIN_TO_GAME_NOTIFY_OFFLINE = 0x5c
+PKTTYPE_LOGIN_TO_GAME_NOTIFY_ONLINE = 0x5b
+PKTTYPE_LOGIN_TO_GAME_LOAD_LEVEL = 0x20
+PKTTYPE_LOGIN_TO_GAME_KICK_USER = 0x45
+PKTTYPE_GAME_TO_LOGIN_MAP_CLOSED = 0x29
+const_1397 = 0x70
+const_1395 = 0xfe
+const_1377 = 0x5e
+const_1321 = 0x22
+const_1378 = 0xfd
+const_1329 = 0x72
+const_1306 = 0x74
+const_1347 = 0x73
+const_1348 = 0xa0
+const_1368 = 0x94
+const_1369 = 0xeb
+const_1353 = 0xb8
+const_1337 = 0x71
+const_1358 = 0xb9
+const_1415 = 0xce
+const_900 = 0xf8
+const_933 = 0x18
 #===================================
