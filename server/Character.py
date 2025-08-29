@@ -2,11 +2,40 @@
 
 import os
 import json
+import struct
+
 from BitUtils import BitBuffer
 from Items import inventory_gears, default_learned_abilities, starting_dyes, \
     Active_master_Class, Mastery_Class, Active_Abilities, Starting_Mounts, \
     Starting_Pets, Starter_Weapons, Buildings, Starting_Charms, \
     Starting_Materials, Starting_Consumables, Starting_Missions
+from constants import GearType, GEARTYPE_BITS
+
+
+def build_level_gears_packet(gears_list: list[tuple[int, int]]) -> bytes:
+    """
+    Build packet 0xF5 with list of (gear_id, tier) tuples.
+    Args:
+        gears_list: List of tuples containing (gear_id, tier).
+    """
+    buf = BitBuffer()
+    buf.write_method_4(len(gears_list))  # Write number of gears
+    for gear_id, tier in gears_list:
+        buf.write_method_6(gear_id, GEARTYPE_BITS)  # 11 bits for gearID
+        buf.write_method_6(tier, GearType.const_176)  # 2 bits for tier
+    payload = buf.to_bytes()
+    return struct.pack(">HH", 0xF5, len(payload)) + payload
+
+def get_inventory_gears(char: dict) -> list[tuple[int, int]]:
+    """
+    Extract gear_id and tier from character's inventoryGears.
+    Args:
+        char: Character dictionary containing inventoryGears.
+    Returns:
+        List of (gear_id, tier) tuples.
+    """
+    inventory_gears = char.get("inventoryGears", [])
+    return [(gear.get("gearID", 0), gear.get("tier", 0)) for gear in inventory_gears]
 
 # Hints Do not delete
 """

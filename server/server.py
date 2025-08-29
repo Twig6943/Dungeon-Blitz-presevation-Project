@@ -10,7 +10,7 @@ from Character import (
     build_login_character_list_bitpacked,
     build_paperdoll_packet,
     load_characters,
-    save_characters
+    save_characters, get_inventory_gears, build_level_gears_packet
 )
 from BitUtils import BitBuffer
 from Commands import handle_hotbar_packet, handle_masterclass_packet, handle_gear_packet, \
@@ -30,6 +30,7 @@ from Commands import handle_hotbar_packet, handle_masterclass_packet, handle_gea
 from WorldEnter import build_enter_world_packet, Player_Data_Packet
 from bitreader import BitReader
 from PolicyServer import start_policy_server
+from constants import GearType, GEARTYPE_BITS
 from static_server import start_static_server
 from entity import Send_Entity_Data, load_npc_data_for_level
 from level_config import DOOR_MAP, LEVEL_CONFIG, get_spawn_coordinates
@@ -46,6 +47,10 @@ level_registry = {}
 char_tokens = {}
 token_char   = {}
 extended_sent_map = {}  # user_id -> bool
+
+
+#with open("saves/ac89b54f094c.json", "r", encoding="utf-8") as f:
+    #DEV_DUMMY_CHAR = json.load(f)["characters"][0]
 
 SECRET_HEX = "815bfb010cd7b1b4e6aa90abc7679028"
 SECRET      = bytes.fromhex(SECRET_HEX)
@@ -344,14 +349,11 @@ def handle_client(session: ClientSession):
                         session.clientEntID = tk
                         session_by_token[tk] = session
                         _level_add(current_level, session)
-
                         level_config = LEVEL_CONFIG.get(current_level, ("LevelsNR.swf/a_Level_NewbieRoad", 1, 1, False))
-
                         # detect hard mode (Dread levels)
                         is_hard = current_level.endswith("Hard")
                         new_moment = "Hard" if is_hard else ""
                         new_alter = "Hard" if is_hard else ""
-
                         pkt_out = build_enter_world_packet(
                             transfer_token=tk,
                             old_level_id=0,
@@ -400,7 +402,6 @@ def handle_client(session: ClientSession):
                     else:
                         print(f"[{session.addr}] Error: No entry found for token {token}, pending_world size={len(pending_world)}")
                         continue
-
                 if len(entry) == 2:
                     char, target_level = entry
                     previous_level = session.current_level or char.get("PreviousLevel", {}).get("name", "NewbieRoad")
@@ -433,7 +434,6 @@ def handle_client(session: ClientSession):
                 save_characters(session.user_id, session.char_list)
                 print(f"[{session.addr}] Saved character {char['name']}: CurrentLevel={char['CurrentLevel']}, PreviousLevel={char.get('PreviousLevel')}")
                 pending_world.pop(token, None)
-
                 session.current_level = target_level
                 session.current_character = char["name"]
                 session.current_char_dict = char
@@ -445,7 +445,6 @@ def handle_client(session: ClientSession):
                 new_x, new_y, new_has_coord = get_spawn_coordinates(char, previous_level, target_level)
                 user_id = session.user_id  # however you’re tracking the account
                 send_ext = not extended_sent_map.get(user_id, {}).get("sent", False)
-
                 welcome = Player_Data_Packet(
                     char,
                     transfer_token=token,
@@ -455,14 +454,21 @@ def handle_client(session: ClientSession):
                     new_has_coord=new_has_coord,
                     send_extended=send_ext
                 )
-
                 extended_sent_map[user_id] = {"sent": True, "last_seen": time.time()}
-
                 conn.sendall(welcome)
                 session.clientEntID = token
-
                 print(f"[{session.addr}] Welcome: {char['name']} (token {token}) on level {session.current_level}, pos=({new_x},{new_y})")
-
+                if session.current_character and session.char_list:
+                    char = next((c for c in session.char_list if c["name"] == session.current_character), None)
+                    if char and session.current_level and "crafttown" in session.current_level.lower():
+                        gears_list = get_inventory_gears(char)
+                        print(f"[{session.addr}] Sending 0xF5 packet with {len(gears_list)} gears for Armory")
+                        packet = build_level_gears_packet(gears_list)
+                        conn.sendall(packet)
+                    else:
+                        print(f"[{session.addr}] Skipping 0xF5 packet: not in CraftTown or no character")
+                else:
+                    print(f"[{session.addr}] Skipping 0xF5 packet: no character selected")
                 #TODO...
                 # Force NPC load temporarily For testing
                 # we will remove this and implement it properly once we are sure Send_Entity_Data is working properly
@@ -477,7 +483,6 @@ def handle_client(session: ClientSession):
                     print(f"[{session.addr}] NPCs manually triggered after world update")
                 except Exception as e:
                     print(f"[{session.addr}] Error spawning NPCs: {e}")
-
 
             # Level Transfer request
             elif pkt == 0x1D:
@@ -498,8 +503,6 @@ def handle_client(session: ClientSession):
                         entry = (
                         getattr(s, "current_char_dict", None) or {"name": s.current_character, "user_id": s.user_id},
                         s.current_level)
-
-
                 if not entry:
                     print(f"[{session.addr}] ERROR: No character for token {_old_token}")
                     continue
@@ -572,8 +575,6 @@ def handle_client(session: ClientSession):
                 )
                 pending_world[new_token] = (char, level_name, old_level)
 
-
-
                 # 12) Build and send the ENTER_WORLD packet, including info about the level we just left
                 #    old_level     := the name of the level we departed
                 #    prev_rec      := char["PreviousLevel"] ⟶ {name, x, y}
@@ -618,7 +619,6 @@ def handle_client(session: ClientSession):
                 session.conn.sendall(pkt_out)
                 print(f"[{session.addr}] Sent ENTER_WORLD with token {new_token} for level {level_name}, pos=({new_x},{new_y})")
 
-
             elif pkt == 0x2D:
                 br = BitReader(data[4:])
                 try:
@@ -657,6 +657,31 @@ def handle_client(session: ClientSession):
                     session.entities.clear()
                 else:
                     print(f"[{session.addr}] Error: No target for door {door_id} in level {session.current_level}")
+
+            #elif pkt == 0x1E:  # MASTER_CLIENT (dev mode)
+                #rd = BitReader(data[4:], debug=False)
+                #map_id = rd.read_method_9()
+                # = rd.read_bit() == 1
+                #print(f"[DEBUG] MASTER_CLIENT: map_id={map_id}, first={is_first}")
+                # Always use dummy char in dev flow
+                #session.current_level = "NewbieRoad"  # or use DevSettings.standAloneMapInternalName if you parse it
+                #session.current_character = DEV_DUMMY_CHAR["name"]
+                #session.current_char_dict = DEV_DUMMY_CHAR
+                #session.user_id = "dev"
+                #player_packet = Player_Data_Packet(
+                    #DEV_DUMMY_CHAR,
+                    #transfer_token=map_id,
+                    #send_extended=True,
+                    #target_level=session.current_level
+                #)
+                #session.conn.sendall(player_packet)
+                #print(f"[DEBUG] Sent Player_Data_Packet (0x10) using DEV_DUMMY_CHAR")
+                # IMPORTANT: do NOT spawn NPCs in dev mode
+                # The client will handle spawning monsters/entities itself because
+                # DEVFLAG_MASTER_CLIENT + DEVFLAG_SPAWN_MONSTERS are set.
+
+            elif pkt == 0xA4:
+                pass
 
             # Level & Door related packets
             ###################################
@@ -749,6 +774,8 @@ def handle_client(session: ClientSession):
                 Skill_Research_Cancell_Request(session)
             elif pkt == 0xDE:# Done
                 Skill_SpeedUp(session, data)
+            elif pkt == 0xCC:
+                pass
             ############################################
 
 
@@ -870,8 +897,6 @@ def handle_client(session: ClientSession):
                 pass
             elif pkt == 0x78:
                 handle_char_regen(session, data)
-                pass
-            elif pkt == 0xCC:
                 pass
             elif pkt == 0x10E:
                 pass

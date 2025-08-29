@@ -142,12 +142,15 @@ class class_10:
     const_665 = 4
     const_105 = 10
 class class_8:
+
     const_658 = 7
     const_731 = 7
 class class_7 :
+
     const_19 = 7
     const_75 = 6
 class class_20 :
+
     const_297 = 7
 class class_3 :
     const_69 = 5
@@ -155,6 +158,7 @@ class class_3 :
     var_2082 = 2  # RareBoost
     var_1374 = 3  # LegendaryBoost
     var_1462 = 4  # ArtisanBoost
+
 class Entity:
     TEAM_BITS = 2
     const_316 = 2  # Entity state bit count
@@ -175,6 +179,7 @@ class Entity:
 
 class PowerType :
     const_423 = 7
+
 class LinkUpdater:
     VELOCITY_DEFLATE = 10000
     VELOCITY_INFLATE = 10000
@@ -227,7 +232,14 @@ class DyeType:
     BITS = 8
 
 class class_1:
+    const_254 = 7
     const_765 = 2
+    const_405 = 91
+    const_1193 = 92
+    DOUBLEFIND1_CHARMID = 93
+    DOUBLEFIND2_CHARMID = 94
+    DOUBLEFIND3_CHARMID = 95
+    const_459 = 96
 
 class class_64:
     const_101 = 16
