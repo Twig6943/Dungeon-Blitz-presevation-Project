@@ -227,7 +227,7 @@ def _on_forge_done_for(user_id: str, char_name: str, primary: int, secondary: in
             try:
                 bb = BitBuffer()
                 bb.write_method_6(primary,   class_1.const_254)
-                bb._append_bits(1 if secondary else 0, 1)
+                bb.write_method_11(1 if secondary else 0, 1)
                 if secondary:
                     bb.write_method_6(secondary, class_64_const_218)
                 payload = bb.to_bytes()

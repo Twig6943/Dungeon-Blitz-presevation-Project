@@ -20,6 +20,8 @@ from missions import _MISSION_DEFS_BY_ID
 
 SAVE_PATH_TEMPLATE = "saves/{user_id}.json"
 
+
+
 def handle_talk_to_npc(session, data, all_sessions):
     payload = data[4:]
     br = BitReader(payload)
@@ -104,12 +106,12 @@ def build_loot_drop_packet(entity_id: int, x: int, y: int,
     bb.write_signed_method_45(y)
 
     # 3) no-offset flag = 0
-    bb._append_bits(1, 1)
+    bb.write_method_11(1, 1)
 
     # 4) six-type flags + payload
     for rt in REWARD_TYPES:
         bit = 1 if rt == reward_type else 0
-        bb._append_bits(bit, 1)
+        bb.write_method_11(bit, 1)
         if bit:
             if rt == 'gear':
                 bb.write_method_6(value1, GEARTYPE_BITS)
@@ -424,7 +426,6 @@ def handle_gear_packet(session, raw_data):
     # 3) Persist via helper
     save_characters(session.user_id, session.char_list)
     print(f"[Save] slot {slot} updated with gear {gear_id}, inventory count = {len(inv)}")
-
 
 def handle_rune_packet(session, raw_data):
     payload = raw_data[4:]
@@ -884,7 +885,7 @@ def magic_forge_packet(session, data):
         bb.write_method_6(mf.get("primary", 0), class_1_const_254)
         bb.write_method_91(mf.get("var_2675", 0))
         bb.write_method_91(mf.get("var_2316", 0))
-        bb._append_bits(0, 1)  # no secondary/usedlist
+        bb.write_method_11(0, 1)  # no secondary/usedlist
 
         resp_payload = bb.to_bytes()
         resp = struct.pack(">HH", 0xCD, len(resp_payload)) + resp_payload
@@ -1904,7 +1905,7 @@ def handle_request_respawn(session, data, all_sessions):
     spawn_pos = 0
     bb = BitBuffer()
     bb.write_signed_method_45(spawn_pos)
-    bb._append_bits(1 if use_potion else 0, 1)
+    bb.write_method_11(1 if use_potion else 0, 1)
     body = bb.to_bytes()
     session.conn.sendall(struct.pack(">HH", 0x80, len(body)) + body)
 
@@ -2697,8 +2698,8 @@ def handle_power_hit(session, data, all_sessions):
             'param6':     param6 if has_p6 else None,
             'flag':       param7,
         }
-        #print(f"[{session.addr}] [PKT0A] Parsed power-hit:")
-        #pprint.pprint(props, indent=4)
+        print(f"[{session.addr}] [PKT0A] Parsed power-hit:")
+        pprint.pprint(props, indent=4)
 
         # 9) Broadcast unchanged packet to other clients
         for other in all_sessions:
@@ -2942,7 +2943,7 @@ def handle_entity_incremental_update(session, data, all_sessions):
         delta_x  = br.read_method_24()
         delta_y  = br.read_method_24()
         delta_vx = br.read_method_24()
-
+        #print(f"delta_x:{delta_x} delta_y : {delta_y} : delta_vx : {delta_vx} ")
         # 3) Read state & flags
         STATE_BITS = Entity.const_316
         ent_state = br.read_method_6(STATE_BITS)

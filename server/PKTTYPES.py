@@ -305,8 +305,6 @@ PKTTYPE_TOLOGIN_GROUP_ADD = 0x6d
 PKTTYPE_CMD_GROUP_LEAVE = 0x66
 PKTTYPE_RECV_CHAT_GROUP = 0x64
 const_876 = 0x8c  # PKTTYPE_PARTY_UPDATE (likely)
-#   - Sent by the server when a party member’s info is updated, such as:
-#       - Player accepts a party invite
 const_1276 = 0x6b # PKTTYPE_TELEPORT_TO_PLAYER
 #===================================
 
