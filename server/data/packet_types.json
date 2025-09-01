@@ -385,7 +385,7 @@
         "buffers": [
             {
                 "method": "write_method_4",
-                "value": "150",
+                "value": "603",
                 "hint": "Entity ID "
             },
             {
@@ -443,62 +443,6 @@
                 "method": "write_method_4",
                 "value": "100",
                 "hint": ""
-            }
-        ]
-    },
-    "spawn NPCs": {
-        "packet_type": "0x0F",
-        "description": "",
-        "buffers": [
-            {
-                "method": "write_method_4",
-                "value": "603",
-                "hint": "Entity ID "
-            },
-            {
-                "method": "write_method_13",
-                "value": "DogAlpha",
-                "hint": "name"
-            },
-            {
-                "method": "write_method_11",
-                "value": "0,1",
-                "hint": "player flag "
-            },
-            {
-                "method": "write_signed_method_45",
-                "value": "2132",
-                "hint": "X"
-            },
-            {
-                "method": "write_signed_method_45",
-                "value": "684",
-                "hint": "Y"
-            },
-            {
-                "method": "write_signed_method_45",
-                "value": "0",
-                "hint": "V"
-            },
-            {
-                "method": "write_method_6",
-                "value": "2,2",
-                "hint": "team"
-            },
-            {
-                "method": "write_bits",
-                "value": "0,1",
-                "hint": ""
-            },
-            {
-                "method": "write_bits",
-                "value": "0,1",
-                "hint": "untargetable"
-            },
-            {
-                "method": "write_method_739",
-                "value": "-45",
-                "hint": "render_depth_offset"
             }
         ]
     }

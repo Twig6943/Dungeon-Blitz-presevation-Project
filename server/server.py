@@ -28,10 +28,9 @@ from Commands import handle_hotbar_packet, handle_masterclass_packet, handle_gea
     handle_emote_begin, Client_Crash_Reports, handle_mount_equip_packet, handle_pet_info_packet, \
     handle_collect_hatched_egg, handle_talk_to_npc, handle_char_regen
 from WorldEnter import build_enter_world_packet, Player_Data_Packet
-from admin_panel import AdminPanel
+from admin_panel import run_admin_panel
 from bitreader import BitReader
 from PolicyServer import start_policy_server
-from constants import GearType, GEARTYPE_BITS
 from static_server import start_static_server
 from entity import Send_Entity_Data, load_npc_data_for_level
 from level_config import DOOR_MAP, LEVEL_CONFIG, get_spawn_coordinates
@@ -947,8 +946,9 @@ if __name__ == "__main__":
     print("For Browser running on : http://localhost/index.html")
     print("For Flash Projector running on : http://localhost/p/cbv/DungeonBlitz.swf?fv=cbq&gv=cbv")
 
-    #panel = AdminPanel(lambda: all_sessions)
-    #panel.mainloop()
+
+    #threading.Thread(target=run_admin_panel, args=(lambda: all_sessions, 5000)).start()
+    #print("Debug Panel running on http://127.0.0.1:5000/")
     try:
         while True:
             time.sleep(1)

@@ -1,16 +1,22 @@
-# admin_panel.py
+# admin_panel.py (renamed or new file)
+from flask import Flask, render_template, request, jsonify
 import json
 import os
 import struct
 import inspect
 import threading
 import time
-import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
 from BitUtils import BitBuffer
+from entity import Send_Entity_Data
+
+app = Flask(__name__)
 
 DATA_FOLDER = "data"
 PACKETS_FILE = os.path.join(DATA_FOLDER, "packet_types.json")
+ENT_FILE = os.path.join(DATA_FOLDER, "EntTypes.json")
+
+packet_loop_event = threading.Event()  # For packet loop stop signal
+npc_loop_event = threading.Event()     # For NPC loop stop signal
 
 if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
@@ -20,13 +26,36 @@ if not os.path.exists(PACKETS_FILE):
     with open(PACKETS_FILE, "w") as f:
         json.dump({}, f, indent=4)
 
+# Load NPC list for cycling
+npc_list = []
+if os.path.exists(ENT_FILE):
+    try:
+        with open(ENT_FILE, "r") as f:
+            raw = json.load(f)
+            if isinstance(raw, list):
+                npc_list = [ent.get("EntName", "") for ent in raw if "EntName" in ent]
+            elif isinstance(raw, dict):
+                npc_list = [raw.get("EntName", "")]
+    except Exception as e:
+        print(f"[Admin] Failed to load EntTypes.json: {e}")
+
+packets_data = {}
+with open(PACKETS_FILE, "r") as f:
+    packets_data = json.load(f)
+
+method_suggestions = sorted(
+    name for name, fn in inspect.getmembers(BitBuffer, predicate=inspect.isfunction) if name.startswith("write_")
+)
+
+sessions_getter = None  # Will be set externally
+
+
 def build_custom_packet(method_calls, pkt_type):
     bb = BitBuffer(debug=True)
     for method_name, args in method_calls:
         method = getattr(bb, method_name, None)
         if not method:
             raise ValueError(f"Unknown BitBuffer method: {method_name}")
-        # Call with argument list
         if isinstance(args, (tuple, list)):
             method(*args)
         else:
@@ -35,270 +64,295 @@ def build_custom_packet(method_calls, pkt_type):
     header = struct.pack(">HH", pkt_type, len(payload))
     return header + payload
 
-def get_bitbuffer_methods():
-    return sorted(
-        name
-        for name, fn in inspect.getmembers(BitBuffer, predicate=inspect.isfunction)
-        if name.startswith("write_")
-    )
 
-class AdminPanel(tk.Tk):
-    def __init__(self, sessions_getter):
-        super().__init__()
-        self.sessions_getter = sessions_getter
-        self.title("Admin Panel")
-        self.geometry("700x550")
-        self.buffer_rows = []
-        self.method_suggestions = get_bitbuffer_methods()
-        self.packets_data = self.load_packets_data()
-        self.create_widgets()
-        self.bind_keys()
+def get_free_entity_id():
+    used_ids = set()
+    for session in list(sessions_getter()):
+        used_ids.update(session.entities.keys())
+    candidate = 20000
+    while candidate in used_ids:
+        candidate += 1
+    return candidate
 
-    def bind_keys(self):
-        # Enter = send current packet
-        self.bind("<Return>", lambda e: self.send_packet())
-
-        # Placeholder bindings for existing buttons
-        self.bind("<Control-n>", lambda e: self.add_buffer_row())  # Ctrl+N = Add Buffer Row
-        self.bind("<Control-s>", lambda e: self.save_packet())  # Ctrl+S = Save Packet
-        self.bind("<Control-l>", lambda e: self.load_packet())  # Ctrl+L = Load Packet
-
-        # Future placeholders (you can change these when you add sub-packet support)
-        self.bind("<Control-a>", lambda e: print("Ctrl+A pressed (placeholder)"))
-        self.bind("<Control-e>", lambda e: print("Ctrl+E pressed (placeholder)"))
-
-    def create_widgets(self):
-        # Saved packets dropdown
-        top_frame = tk.Frame(self)
-        top_frame.pack(pady=5)
-        tk.Label(top_frame, text="Saved Packets:").pack(side=tk.LEFT)
-        self.saved_pkt_var = tk.StringVar()
-        self.saved_pkt_menu = ttk.Combobox(
-            top_frame,
-            textvariable=self.saved_pkt_var,
-            values=list(self.packets_data.keys()),
-            width=40,
-            state="readonly"
-        )
-        self.saved_pkt_menu.pack(side=tk.LEFT, padx=5)
-        self.saved_pkt_menu.bind("<<ComboboxSelected>>", self.load_selected_packet)
-
-        # Loop controls
-        loop_frame = tk.Frame(self)
-        loop_frame.pack(pady=5, anchor="w")
-
-        self.loop_var = tk.BooleanVar(value=False)
-        self.loop_delay_var = tk.StringVar(value="1")  # default 1 second
-
-        tk.Checkbutton(loop_frame, text="Loop Packet", variable=self.loop_var).pack(side=tk.LEFT, padx=5)
-        tk.Label(loop_frame, text="Delay (s):").pack(side=tk.LEFT, padx=2)
-        tk.Entry(loop_frame, textvariable=self.loop_delay_var, width=5).pack(side=tk.LEFT, padx=5)
-
-        # Packet type centered
-        type_frame = tk.Frame(self)
-        type_frame.pack(pady=5)
-        tk.Label(type_frame, text="Packet Type (hex):").pack(side=tk.LEFT)
-        self.pkt_type_var = tk.StringVar(value="F5")
-        tk.Entry(type_frame, textvariable=self.pkt_type_var, width=6, justify='center').pack(side=tk.LEFT, padx=5)
-
-        # Description
-        desc_frame = tk.Frame(self)
-        desc_frame.pack(pady=5, fill=tk.X)
-        tk.Label(desc_frame, text="Description:").pack(side=tk.LEFT)
-        self.desc_var = tk.StringVar()
-        tk.Entry(desc_frame, textvariable=self.desc_var, width=60).pack(side=tk.LEFT, padx=5)
-
-        # Buffer rows
-        self.rows_frame = tk.Frame(self)
-        self.rows_frame.pack(pady=10, fill=tk.X)
-        self.add_buffer_row()
-
-        # Action buttons
-        btn_frame = tk.Frame(self)
-        btn_frame.pack(pady=10, fill=tk.X)
-
-        # Left side: Add row & Send
-        left_btn_frame = tk.Frame(btn_frame)
-        left_btn_frame.pack(side=tk.LEFT)
-        tk.Button(left_btn_frame, text="Add Buffer Row", command=self.add_buffer_row).pack(side=tk.LEFT, padx=5)
-        tk.Button(left_btn_frame, text="Send Packet", command=self.send_packet).pack(side=tk.LEFT, padx=5)
-
-        # Right side: Save/Load
-        right_btn_frame = tk.Frame(btn_frame)
-        right_btn_frame.pack(side=tk.RIGHT)
-        tk.Button(right_btn_frame, text="Save Packet", command=self.save_packet).pack(side=tk.LEFT, padx=5)
-        tk.Button(right_btn_frame, text="Load Packet", command=self.load_packet).pack(side=tk.LEFT, padx=5)
-
-        # Status label
-        self.status_var = tk.StringVar()
-        self.status_label = tk.Label(self, textvariable=self.status_var, anchor="w", fg="blue")
-        self.status_label.pack(fill=tk.X, side=tk.BOTTOM, padx=5, pady=5)
+@app.route('/active_players', methods=['GET'])
+def active_players():
+    players = []
+    for session in list(sessions_getter()):
+        if hasattr(session, 'current_character') and session.current_character:
+            players.append(session.current_character)
+    return jsonify(players)
 
 
+@app.route('/')
+def index():
+    return render_template('admin_panel.html',
+                           saved_packets=list(packets_data.keys()),
+                           method_suggestions=method_suggestions,
+                           npc_list=npc_list)
 
-    def add_buffer_row(self, method="", value="", hint=""):
-        row_frame = tk.Frame(self.rows_frame)
-        row_frame.pack(fill=tk.X, pady=2)
 
-        method_var = tk.StringVar(value=method)
-        value_var = tk.StringVar(value=value)
-        hint_var = tk.StringVar(value=hint)  # New hint variable
+@app.route('/load_packet', methods=['POST'])
+def load_packet():
+    name = request.json.get('name')
+    if name in packets_data:
+        return jsonify(packets_data[name])
+    return jsonify({'error': 'Packet not found'}), 404
 
-        # Method Combobox
-        ttk.Combobox(
-            row_frame,
-            textvariable=method_var,
-            values=self.method_suggestions,
-            width=30
-        ).pack(side=tk.LEFT, padx=5)
 
-        # Buffer value Entry
-        tk.Entry(row_frame, textvariable=value_var, width=20).pack(side=tk.LEFT, padx=5)
+@app.route('/save_packet', methods=['POST'])
+def save_packet():
+    data = request.json
+    name = data.get('name')
+    if not name:
+        return jsonify({'error': 'Name required'}), 400
+    packets_data[name] = {
+        "packet_type": data['packet_type'],
+        "description": data['description'],
+        "buffers": data['buffers']
+    }
+    with open(PACKETS_FILE, "w") as f:
+        json.dump(packets_data, f, indent=4)
+    return jsonify({'success': True, 'saved_packets': list(packets_data.keys())})
 
-        # Remove button
-        remove_btn = tk.Button(row_frame, text="Remove",
-                               command=lambda: self.remove_buffer_row(row_frame, method_var, value_var, hint_var))
-        remove_btn.pack(side=tk.LEFT, padx=5)
 
-        # Hint label + entry
-        tk.Label(row_frame, text="hint:").pack(side=tk.LEFT, padx=(10, 2))  # small label
-        tk.Entry(row_frame, textvariable=hint_var, width=30, fg="gray").pack(side=tk.LEFT, padx=5)
-
-        # Save row data including hint
-        self.buffer_rows.append((row_frame, method_var, value_var, hint_var))
-
-    def remove_buffer_row(self, row_frame, method_var, value_var, hint_var):
-        """Remove a buffer row from the UI and the tracking list"""
-        row_frame.destroy()
-        self.buffer_rows = [r for r in self.buffer_rows if r[1] != method_var]
-
-    def send_packet(self):
-        def _send():
+@app.route('/send_packet', methods=['POST'])
+def send_packet():
+    data = request.json
+    pkt_type = int(data['packet_type'], 16)
+    method_calls = []
+    for buf in data['buffers']:
+        method = buf['method'].strip()
+        val_str = buf['value'].strip()
+        if not method or not val_str:
+            continue
+        parts = [p.strip() for p in val_str.split(",")]
+        args = []
+        for p in parts:
+            if p == "":
+                continue
             try:
-                pkt_type = int(self.pkt_type_var.get(), 16)
-                method_calls = []
-                for _, mvar, vvar, _ in self.buffer_rows:  # ignore hint
-                    method = mvar.get().strip()
-                    val_str = vvar.get().strip()
-                    if not method or not val_str:
-                        continue
-                    parts = [p.strip() for p in val_str.split(",")]
-                    args = []
-                    for p in parts:
-                        if p == "":
-                            continue
-                        try:
-                            if "." in p:
-                                args.append(float(p))
-                            else:
-                                args.append(int(p))
-                        except ValueError:
-                            args.append(p)
-                    if len(args) == 1:
-                        args = args[0]
-                    method_calls.append((method, args))
-                if not method_calls:
-                    self.status_var.set("No buffers to send.")
-                    return
-                packet = build_custom_packet(method_calls, pkt_type)
+                if "." in p:
+                    args.append(float(p))
+                else:
+                    args.append(int(p))
+            except ValueError:
+                args.append(p)
+        if len(args) == 1:
+            args = args[0]
+        method_calls.append((method, args))
+    if not method_calls:
+        return jsonify({'error': 'No buffers to send'})
+    packet = build_custom_packet(method_calls, pkt_type)
 
-                while True:
-                    for session in list(self.sessions_getter()):
-                        try:
-                            session.conn.sendall(packet)
-                            print(f"[Admin] Sent packet to {session.addr}")
-                        except Exception as e:
-                            print(f"[Admin] Failed to send packet to {session.addr}: {e}")
-                    self.status_var.set(f"Packet 0x{pkt_type:X} sent to all clients.")
+    def send_once():
+        sent_count = 0
+        target_name = data.get('target_player', '').strip().lower()
+        for session in list(sessions_getter()):
+            if target_name and session.current_character.lower() != target_name:
+                continue
+            try:
+                session.conn.sendall(packet)
+                sent_count += 1
+            except:
+                pass
+        return sent_count, target_name
 
-                    if not self.loop_var.get():
-                        break  # stop loop if loop checkbox is unchecked
+    if not data.get('loop', False):
+        sent_count, target_name = send_once()
+        target_msg = f" to player '{target_name}'" if target_name else " to all clients"
+        return jsonify({'success': True, 'message': f'Packet 0x{pkt_type:X} sent to {sent_count} clients{target_msg}.'})
+    else:
+        def loop_send():
+            delay = float(data.get('delay', 1.0))
+            packet_loop_event.clear()  # Reset event to not-stopped
+            while not packet_loop_event.is_set():
+                send_once()
+                time.sleep(delay)
 
-                    try:
-                        delay = float(self.loop_delay_var.get())
-                    except ValueError:
-                        delay = 1.0  # fallback delay
-                    time.sleep(delay)
+        threading.Thread(target=loop_send, daemon=True).start()
+        target_msg = f" for player '{data.get('target_player', '')}'" if data.get('target_player',
+                                                                                  '') else " for all clients"
+        return jsonify({'success': True, 'message': f'Looping packet started{target_msg}. Use Stop button to halt.'})
 
-            except Exception as e:
-                self.status_var.set(f"Error: {str(e)}")
+@app.route('/stop_packet_loop', methods=['POST'])
+def stop_packet_loop():
+    packet_loop_event.set()  # Signal stop
+    return jsonify({'success': True, 'message': 'Packet loop stopped.'})
 
-        # Run sending in a separate thread to avoid freezing the GUI
-        threading.Thread(target=_send, daemon=True).start()
 
-    def load_packets_data(self):
-        with open(PACKETS_FILE, "r") as f:
-            return json.load(f)
+@app.route('/spawn_npc', methods=['POST'])
+def spawn_npc():
+    data = request.json
+    target_name = data.get('target_player', '').strip().lower()
 
-    def save_packets_data(self):
-        with open(PACKETS_FILE, "w") as f:
-            json.dump(self.packets_data, f, indent=4)
+    def do_spawn_once(current_name=None):
+        x_val = int(data.get('x', 0))
+        y_val = int(data.get('y', 0))
 
-    def save_packet(self):
-        selected_name = self.saved_pkt_var.get()
+        # Only replace coordinates that are 0
+        for session in list(sessions_getter()):
+            if target_name and session.current_character.lower() != target_name:
+                continue
+            if session.clientEntID and session.clientEntID in session.entities:
+                player_entity = session.entities[session.clientEntID]
+                if x_val == 0:
+                    px = player_entity.get("pos_x")
+                    if px is not None:
+                        x_val = int(px)
+                if y_val == 0:
+                    py = player_entity.get("pos_y")
+                    if py is not None:
+                        y_val = int(py)
+                break  # Stop after finding the first matching player
 
-        # If a packet is selected, ask whether to overwrite or create new
-        if selected_name and selected_name in self.packets_data:
-            response = messagebox.askyesnocancel(
-                "Save Packet",
-                f"A packet named '{selected_name}' is selected.\n"
-                "Yes = Overwrite\nNo = Create New\nCancel = Abort"
-            )
-            if response is None:
-                # Cancel pressed
-                return
-            elif response:
-                # Yes = Overwrite
-                name = selected_name
-            else:
-                # No = Create new
-                name = tk.simpledialog.askstring("Save Packet", "Enter new packet name:")
-                if not name:
-                    return
-        else:
-            # No packet selected or doesn't exist, create new
-            name = tk.simpledialog.askstring("Save Packet", "Enter packet name:")
-            if not name:
-                return
+        # Determine NPC ID
+        try:
+            requested_id = int(data.get('id', '0'))
+        except ValueError:
+            requested_id = 0
 
-        # Save packet data
-        self.packets_data[name] = {
-            "packet_type": self.pkt_type_var.get(),
-            "description": self.desc_var.get(),
-            "buffers": [
-                {"method": m.get(), "value": v.get(), "hint": h.get()}
-                for _, m, v, h in self.buffer_rows
-            ]
+        npc_id = get_free_entity_id() if requested_id == 0 else requested_id
+
+        # Build the NPC
+        npc = {
+            "id": npc_id,
+            "name": current_name or data.get('name', 'FirePriestBossHard'),
+            "x": x_val,
+            "y": y_val,
+            "v": int(data.get('v', 0)),
+            "team": int(data.get('team', 2)),
+            "untargetable": data.get('untargetable', False),
+            "render_depth_offset": int(data.get('render_depth_offset', 0)),
+            "behavior_speed": float(data.get('behavior_speed', 0)),
+            "Linked_Mission": data.get('Linked_Mission', ''),
+            "DramaAnim": data.get('DramaAnim', ''),
+            "SleepAnim": data.get('SleepAnim', ''),
+            "summonerId": int(data.get('summonerId', 0)),
+            "power_id": int(data.get('power_id', 0)),
+            "entState": int(data.get('entState', 0)),
+            "facing_left": data.get('facing_left', False),
+            "health_delta": int(data.get('health_delta', 0)),
+            "buffs": [],
+            "max_hp": 100,
+            "mount_id": 1,
+            "buff_icon": 1,
+            "is_player": False
         }
-        self.save_packets_data()
-        self.saved_pkt_menu['values'] = list(self.packets_data.keys())
-        self.saved_pkt_var.set(name)  # Select the saved packet
-        self.status_var.set(f"Packet '{name}' saved.")
 
-    def load_packet(self):
-        # open a selection dialog
-        name = tk.simpledialog.askstring("Load Packet", "Enter packet name to load:")
-        if not name or name not in self.packets_data:
-            self.status_var.set(f"Packet '{name}' not found.")
-            return
-        self.load_packet_by_name(name)
+        payload = Send_Entity_Data(npc)
+        packet = struct.pack(">HH", 0x0F, len(payload)) + payload
+        sent_count = 0
 
-    def load_selected_packet(self, event):
-        name = self.saved_pkt_var.get()
-        if name in self.packets_data:
-            self.load_packet_by_name(name)
+        for session in list(sessions_getter()):
+            try:
+                session.conn.sendall(packet)
+                # Track entity in session
+                session.entities[npc_id] = {"pos_x": x_val, "pos_y": y_val}
+                sent_count += 1
+            except:
+                pass
 
-    def load_packet_by_name(self, name):
-        data = self.packets_data[name]
-        self.pkt_type_var.set(data.get("packet_type", "F5"))
-        self.desc_var.set(data.get("description", ""))
-        # Clear existing buffer rows
-        for row, _, _, _ in self.buffer_rows:
-            row.destroy()
-        self.buffer_rows.clear()
-        # Add loaded buffers with hints
-        for buf in data.get("buffers", []):
-            self.add_buffer_row(buf.get("method", ""), buf.get("value", ""), buf.get("hint", ""))
-        self.status_var.set(f"Packet '{name}' loaded")
+        return sent_count, npc['name']
+
+    if not data.get('loop', False):
+        sent_count, npc_name = do_spawn_once()
+        return jsonify({'success': True, 'message': f'Spawned NPC {npc_name} to {sent_count} clients.'})
+    else:
+        def loop_spawn():
+            start_index = data.get('start_index', '')
+            idx = int(start_index) if start_index and start_index.strip() else 0
+            delay = float(data.get('delay', 2))
+            npc_loop_event.clear()  # Reset event to not-stopped
+            while not npc_loop_event.is_set():
+                current_name = None
+                if data.get('cycle', False) and npc_list:
+                    current_name = npc_list[idx % len(npc_list)]
+                    idx += 1
+                do_spawn_once(current_name)
+                time.sleep(delay)
+
+        threading.Thread(target=loop_spawn, daemon=True).start()
+        return jsonify({'success': True, 'message': 'Looping NPC spawn started. Use Stop button to halt.'})
+
+@app.route('/stop_npc_loop', methods=['POST'])
+def stop_npc_loop():
+    npc_loop_event.set()  # Signal stop
+    return jsonify({'success': True, 'message': 'NPC loop stopped.'})
 
 
+@app.route('/save_npc_to_json', methods=['POST'])
+def save_npc_to_json():
+    data = request.json
+    json_path = data.get('json_path')
+    if not json_path:
+        return jsonify({'error': 'JSON path required'}), 400
+    target_name = data.get('target_player', '').strip().lower()
+    x_val = int(data.get('x', 0))
+    y_val = int(data.get('y', 0))
+    if x_val == 0 and y_val == 0:
+        for session in list(sessions_getter()):
+            if target_name and session.current_character.lower() != target_name:
+                continue
+            if session.clientEntID and session.clientEntID in session.entities:
+                player_entity = session.entities[session.clientEntID]
+                px = player_entity.get("pos_x")
+                py = player_entity.get("pos_y")
+                if px is not None and py is not None:
+                    x_val = int(px)
+                    y_val = int(py)
+                    break
+    try:
+        requested_id = int(data.get('id', '0'))
+    except ValueError:
+        requested_id = 0
+    npc_id = get_free_entity_id() if requested_id == 0 else (
+        requested_id if not any(requested_id in s.entities for s in list(sessions_getter())) else get_free_entity_id()
+    )
+    npc = {
+        "id": npc_id,
+        "name": data.get('name', 'FirePriestBossHard'),
+        "x": x_val,
+        "y": y_val,
+        "v": int(data.get('v', 0)),
+        "team": int(data.get('team', 2)),
+        "entState": int(data.get('entState', 0)),
+        "untargetable": data.get('untargetable', False),
+        "render_depth_offset": int(data.get('render_depth_offset', 0)),
+        "behavior_speed": float(data.get('behavior_speed', 0)),
+        "Linked_Mission": data.get('Linked_Mission', ''),
+        "DramaAnim": data.get('DramaAnim', ''),
+        "SleepAnim": data.get('SleepAnim', ''),
+        "summonerId": int(data.get('summonerId', 0)),
+        "power_id": int(data.get('power_id', 0)),
+        "facing_left": data.get('facing_left', False),
+        "health_delta": int(data.get('health_delta', 0)),
+        "buffs": [],
+    }
+    if os.path.exists(json_path):
+        with open(json_path, "r") as f:
+            file_data = json.load(f)
+            if not isinstance(file_data, list):
+                file_data = []
+    else:
+        file_data = []
+    file_data.append(npc)
+    with open(json_path, "w") as f:
+        json.dump(file_data, f, indent=2)
+    return jsonify({'success': True, 'message': f'NPC saved to {json_path}'})
+
+@app.route('/delete_packet', methods=['POST'])
+def delete_packet():
+    name = request.json.get('name')
+    if not name:
+        return jsonify({'error': 'Name required'}), 400
+    if name not in packets_data:
+        return jsonify({'error': 'Packet not found'}), 404
+    del packets_data[name]
+    with open(PACKETS_FILE, "w") as f:
+        json.dump(packets_data, f, indent=4)
+    return jsonify({'success': True, 'saved_packets': list(packets_data.keys())})
+
+def run_admin_panel(getter, port=5000):
+    global sessions_getter
+    sessions_getter = getter
+    app.run(host='127.0.0.1', port=port, debug=True, use_reloader=False)
