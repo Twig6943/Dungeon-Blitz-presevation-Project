@@ -1,4 +1,4 @@
-name: Build self-contained binary (mac)
+name: Build self-contained binary (Mac)
 
 on:
   workflow_dispatch:
