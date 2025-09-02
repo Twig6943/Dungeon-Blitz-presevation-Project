@@ -28,7 +28,7 @@ from Commands import handle_hotbar_packet, handle_masterclass_packet, handle_gea
     handle_emote_begin, Client_Crash_Reports, handle_mount_equip_packet, handle_pet_info_packet, \
     handle_collect_hatched_egg, handle_talk_to_npc, handle_char_regen
 from WorldEnter import build_enter_world_packet, Player_Data_Packet
-from admin_panel import run_admin_panel
+#from admin_panel import run_admin_panel
 from bitreader import BitReader
 from PolicyServer import start_policy_server
 from static_server import start_static_server
