@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 import os
+import sys
 import json
 import socket, struct, hashlib, sys, time, secrets, threading
+
+def resource_path(relative_path: str) -> str:
+    """Get absolute path to resource, works for dev and PyInstaller."""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 from Brain import tick_npc_brains
 from accounts import get_or_create_user_id, load_accounts, _SAVES_DIR, is_character_name_taken, build_popup_packet
