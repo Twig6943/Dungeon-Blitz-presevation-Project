@@ -19,7 +19,7 @@
        `http://localhost/p/cbv/DungeonBlitz.swf?fv=cbq&gv=cbv`
    * **Option 2:** Flash-Compatible Browser
 
-     * Open `http://localhost/index.html` in your browser
+     * Open `http://localhost/index.html` in your browser (http://localhost:5050 for admin panel)
 
 ---
 
