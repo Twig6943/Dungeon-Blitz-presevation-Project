@@ -13,7 +13,7 @@ jobs:
 
       - name: Install Python
         run: |
-          brew install python@3
+          #brew install python@3 #Python 3 seems to be installed on mac runners
           python3 -m ensurepip --upgrade
 
       - name: Install Dependencies
