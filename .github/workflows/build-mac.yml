@@ -11,16 +11,19 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Setup Python Virtual Environment
         run: |
           cd server
+          python3 -m venv venv
+          source venv/bin/activate
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
+          python3 -m pip install pyinstaller
 
       - name: Compile with PyInstaller
         run: |
           cd server
-          python3 -m pip install pyinstaller
+          source venv/bin/activate
           pyinstaller pyinstaller.spec
 
       - name: Zip the Executable
