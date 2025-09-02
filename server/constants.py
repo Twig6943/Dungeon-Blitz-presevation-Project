@@ -309,19 +309,24 @@ def get_dye_color(dye_id):
 
 def load_ability_data():
     try:
-        # Get the directory of Constants.py
+        # Get the directory of this script
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        json_path = os.path.join(base_dir, "data/AbilityTypes.json")
+        # Build path to data file
+        json_path = os.path.join(base_dir, "data", "AbilityTypes.json")
+        
+        # Open and load JSON
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            #print(f"Loaded {len(data)} ability entries from {json_path}")
+            # Optional: print(f"Loaded {len(data)} ability entries from {json_path}")
             return data
+
     except FileNotFoundError:
         print(f"Error: AbilityTypes.json not found at {json_path}")
         return []
     except json.JSONDecodeError as e:
         print(f"Error: Failed to parse AbilityTypes.json: {e}")
         return []
+
 
 ABILITY_DATA = load_ability_data()
 
