@@ -11,10 +11,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Python #Python 3 seems to be installed on mac runners
-        run: |
-          python3 -m ensurepip --upgrade
-
       - name: Install Dependencies
         run: |
           cd server
